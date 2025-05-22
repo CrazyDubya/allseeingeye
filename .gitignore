@@ -184,4 +184,4 @@ Desktop.ini
 uploads/
 temp/
 logs/
-old/
+old/.venv/
