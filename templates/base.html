@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AllSeeingEye{% endblock %}</title>
+    {{ bootstrap.load_css() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/eye-logo.svg') }}" type="image/svg+xml">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='images/eye-logo.svg') }}" alt="AllSeeingEye Logo" class="logo-svg">
+                    <span>AllSeeingEye</span>
+                </div>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                            <i class="fas fa-info-circle"></i> About
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer mt-5 py-3">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-start">
+                        <img src="{{ url_for('static', filename='images/eye-logo.svg') }}" alt="AllSeeingEye Logo" width="20" height="20" class="me-2">
+                        <span class="text-muted">AllSeeingEye &copy; {{ now.year }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#aboutModal" class="text-decoration-none text-muted me-3">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                    <a href="https://github.com" class="text-decoration-none text-muted" target="_blank">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- About Modal -->
+    <div class="modal fade" id="aboutModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <img src="{{ url_for('static', filename='images/eye-logo.svg') }}" alt="AllSeeingEye Logo" width="24" height="24" class="me-2">
+                        About AllSeeingEye
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="lead">AllSeeingEye is a powerful codebase analysis tool that provides deep insights into your projects.</p>
+                    
+                    <h6 class="mt-4 mb-2"><i class="fas fa-chart-pie text-primary me-2"></i>Key Features:</h6>
+                    <ul class="list-unstyled ps-4">
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Comprehensive codebase structure analysis</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Dependency visualization</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Code similarity detection</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Interactive metrics dashboards</li>
+                    </ul>
+                    
+                    <p class="mt-3">This web interface allows you to analyze local directories or upload project archives for quick and detailed analysis. Perfect for understanding new codebases, improving code quality, and planning refactoring efforts.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ bootstrap.load_js() }}
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

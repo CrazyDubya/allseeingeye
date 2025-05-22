@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AllSeeingEye Analysis: {{ title }}</title>
+    <style>
+        :root {
+            --primary-color: {{ theme.primary_color }};
+            --secondary-color: {{ theme.secondary_color }};
+            --background-color: {{ theme.background_color }};
+            --text-color: {{ theme.text_color }};
+            --highlight-color: {{ theme.highlight_color }};
+            --border-color: {{ theme.border_color }};
+            --font-family: {{ theme.font_family }};
+        }
+        
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        
+        header .metadata {
+            text-align: right;
+            font-size: 14px;
+        }
+        
+        section {
+            margin-bottom: 40px;
+            background-color: var(--background-color);
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        h3 {
+            color: var(--secondary-color);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-color);
+        }
+        
+        .stat-card p {
+            margin: 10px 0 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .recommendation {
+            background-color: #f9f9f9;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .recommendation h3 {
+            margin-top: 0;
+        }
+        
+        .complexity {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: white;
+        }
+        
+        .complexity.low {
+            background-color: #28a745;
+        }
+        
+        .complexity.medium {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .complexity.high {
+            background-color: #dc3545;
+        }
+        
+        .file-tree {
+            font-family: monospace;
+            white-space: pre;
+            line-height: 1.5;
+        }
+        
+        .file-category {
+            margin-bottom: 30px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .nav-tabs li {
+            margin-right: 5px;
+        }
+        
+        .nav-tabs a {
+            display: block;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: var(--text-color);
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .nav-tabs a.active {
+            border-color: var(--border-color);
+            background-color: var(--background-color);
+            margin-bottom: -1px;
+            color: var(--primary-color);
+        }
+        
+        .tab-content .tab-pane {
+            display: none;
+        }
+        
+        .tab-content .tab-pane.active {
+            display: block;
+        }
+        
+        footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            
+            header .container {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            header .metadata {
+                text-align: center;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>AllSeeingEye Analysis: {{ title }}</h1>
+            <div class="metadata">
+                <div>Generated: {{ timestamp }}</div>
+                <div>Total files: {{ statistics.total_files }}</div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <section id="overview">
+            <h2>Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Files</h3>
+                    <p>{{ statistics.total_files }}</p>
+                </div>
+                {% if statistics.total_lines %}
+                <div class="stat-card">
+                    <h3>Total Lines</h3>
+                    <p>{{ statistics.total_lines }}</p>
+                </div>
+                {% endif %}
+                <div class="stat-card">
+                    <h3>Categories</h3>
+                    <p>{{ statistics.files_by_category|length }}</p>
+                </div>
+                {% if statistics.languages %}
+                <div class="stat-card">
+                    <h3>Languages</h3>
+                    <p>{{ statistics.languages|length }}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <h3>Files by Category</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Files</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, count in statistics.files_by_category.items() %}
+                        <tr>
+                            <td>{{ category }}</td>
+                            <td>{{ count }}</td>
+                            <td>{{ (count / statistics.total_files * 100)|int }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        {% if recommendations %}
+        <section id="recommendations">
+            <h2>Recommendations</h2>
+            {% for rec in recommendations %}
+            <div class="recommendation">
+                <h3>{{ rec.title }}</h3>
+                <p>{{ rec.description }}</p>
+                {% if rec.benefit %}
+                <p><strong>Benefit:</strong> {{ rec.benefit }}</p>
+                {% endif %}
+                <p>
+                    <strong>Complexity:</strong> 
+                    <span class="complexity {{ rec.complexity_class }}">{{ rec.complexity }}</span>
+                </p>
+                {% if rec.implementation_steps %}
+                <p><strong>Implementation:</strong></p>
+                <ol>
+                    {% for step in rec.implementation_steps %}
+                    <li>{{ step }}</li>
+                    {% endfor %}
+                </ol>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        
+        {% if file_structure %}
+        <section id="structure">
+            <h2>File Structure</h2>
+            <div class="file-tree">{{ file_structure }}</div>
+        </section>
+        {% endif %}
+        
+        {% if file_categories %}
+        <section id="files">
+            <h2>Files by Category</h2>
+            <ul class="nav-tabs">
+                {% for category in file_categories %}
+                <li><a href="#category-{{ category.name|replace(' ', '-')|lower }}" class="{% if loop.first %}active{% endif %}">{{ category.name }} ({{ category.files|length }})</a></li>
+                {% endfor %}
+            </ul>
+            
+            <div class="tab-content">
+                {% for category in file_categories %}
+                <div id="category-{{ category.name|replace(' ', '-')|lower }}" class="tab-pane {% if loop.first %}active{% endif %}">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Lines</th>
+                                    <th>Size</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in category.files %}
+                                <tr>
+                                    <td>{{ file.path }}</td>
+                                    <td>{{ file.lines if file.lines else '-' }}</td>
+                                    <td>{{ file.size_formatted if file.size_formatted else '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+    
+    <footer>
+        <div class="container">
+            Generated by AllSeeingEye | {{ timestamp }}
+        </div>
+    </footer>
+    
+    <script>
+        // Simple tab navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.nav-tabs a');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Deactivate all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Hide all tab panes
+                    document.querySelectorAll('.tab-pane').forEach(pane => {
+                        pane.classList.remove('active');
+                    });
+                    
+                    // Activate this tab
+                    this.classList.add('active');
+                    
+                    // Show the corresponding tab pane
+                    const tabId = this.getAttribute('href');
+                    document.querySelector(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

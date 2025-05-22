@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Analysis Results{% endblock %}
+
+{% block extra_css %}
+<style>
+    .visualization-container {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        overflow: auto;
+        max-height: 600px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+    }
+    
+    .results-container {
+        font-family: monospace;
+        white-space: pre-wrap;
+        overflow: auto;
+        max-height: 600px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+    
+    .tab-content {
+        padding-top: 20px;
+    }
+    
+    .similarity-item {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+    
+    .similarity-files {
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+    }
+    
+    .similarity-score {
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3>Analysis Results</h3>
+                <div>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                    <a href="{{ url_for('download_results', result_id=result_id) }}" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Download Results
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p><strong>Directory:</strong> {{ results.directory }}</p>
+                <p><strong>Output Format:</strong> {{ results.format }}</p>
+                
+                <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="results-tab" data-bs-toggle="tab" 
+                                data-bs-target="#results" type="button" role="tab">
+                            Analysis Results
+                        </button>
+                    </li>
+                    
+                    {% if results.visualizations %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="visualizations-tab" data-bs-toggle="tab" 
+                                data-bs-target="#visualizations" type="button" role="tab">
+                            Visualizations
+                        </button>
+                    </li>
+                    {% endif %}
+                    
+                    {% if results.similarity_results %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="similarity-tab" data-bs-toggle="tab" 
+                                data-bs-target="#similarity" type="button" role="tab">
+                            Code Similarity
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <div class="tab-content" id="resultTabsContent">
+                    <div class="tab-pane fade show active" id="results" role="tabpanel">
+                        {% if results.format == 'html' %}
+                            <div class="results-container">
+                                {{ results.formatted_results|safe }}
+                            </div>
+                        {% else %}
+                            <div class="results-container">
+                                {{ results.formatted_results }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if results.visualizations %}
+                    <div class="tab-pane fade" id="visualizations" role="tabpanel">
+                        <div class="row">
+                            {% for viz in results.visualizations %}
+                            <div class="col-md-12 mb-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>{{ viz.name }}</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="visualization-container">
+                                            {{ viz.data|safe }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if results.similarity_results %}
+                    <div class="tab-pane fade" id="similarity" role="tabpanel">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            Showing files with similarity score above threshold. Higher score indicates more similar code.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                {% for group in results.similarity_results %}
+                                <div class="similarity-item">
+                                    <div class="similarity-files">
+                                        {{ group.file1 }} ↔ {{ group.file2 }}
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <div class="similarity-score">
+                                            Similarity Score: {{ group.score }}%
+                                        </div>
+                                        <div>
+                                            {% if group.refactoring_suggestion %}
+                                            <span class="badge bg-info">Refactoring Suggested</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if group.refactoring_suggestion %}
+                                    <div class="mt-2">
+                                        <strong>Suggestion:</strong> {{ group.refactoring_suggestion }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cleanup temporary files when navigating away
+        window.addEventListener('beforeunload', function() {
+            // Send cleanup request
+            fetch('/cleanup/{{ result_id }}', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).catch(error => {
+                console.error('Error during cleanup:', error);
+            });
+        });
+        
+        // Initialize visualizations if needed
+        const visualizationTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+        visualizationTabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(event) {
+                // You could initialize visualizations when their tab is shown
+                // For example, redraw charts or graphs
+            });
+        });
+    });
+</script>
+{% endblock %}
