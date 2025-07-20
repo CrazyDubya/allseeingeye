@@ -240,3 +240,16 @@ class PromptTemplates:
     If possible, provide actual test code that could be implemented using a standard testing framework for {language}.
     Format your response as a markdown document with clearly separated test cases.
     """
+
+    # Code summarization template
+    CODE_SUMMARIZATION = """
+    You are an expert code summarizer. Summarize the following {language} code.
+
+    FILENAME: {filename}
+
+    ```{language}
+    {code}
+    ```
+
+    Provide a concise summary of the code's purpose and functionality. The summary should be no more than 3 sentences.
+    """

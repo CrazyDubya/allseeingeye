@@ -16,6 +16,11 @@ import hashlib
 from typing import List, Dict, Tuple, Optional, Set, Any, Union
 from pathlib import Path
 
+# Import LLM components
+from src.llm.integration import get_llm_integration
+from src.llm.prompt_formatter import PromptFormatter
+from src.formatters.exporters.interactive_html_exporter import InteractiveHTMLExporter
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("AllSeeingEye")
@@ -177,11 +182,23 @@ class OutputFormat:
     def format_json(directory_structure: str, files_content: Dict[str, Dict],
                     stats: Dict[str, Any], codebase_summary: str) -> str:
         """Format output as JSON"""
+        # Create a serializable version of files_content
+        serializable_files_content = {}
+        for category, files in files_content.items():
+            serializable_files_content[category] = {}
+            for file_path, file_info in files.items():
+                # Create a copy of file_info to avoid modifying the original
+                info_copy = file_info.copy()
+                # Add summary if it exists
+                if "summary" in info_copy:
+                    info_copy["summary"] = info_copy["summary"]
+                serializable_files_content[category][file_path] = info_copy
+
         output = {
             "statistics": stats,
             "codebase_summary": codebase_summary,
             "directory_structure": directory_structure,
-            "files_content": files_content
+            "files_content": serializable_files_content
         }
         return json.dumps(output, indent=2)
 
@@ -528,7 +545,25 @@ class AllSeeingEye:
 
         return "\n".join(summary)
 
-    def analyze(self):
+    def summarize_files(self, llm_provider="ollama", llm_model="gemma:7b"):
+        """Summarize each file in the codebase using an LLM."""
+        logger.info("Summarizing files...")
+        llm = get_llm_integration(provider=llm_provider, config={"model": llm_model})
+        if not llm.is_available():
+            logger.warning(f"LLM provider '{llm_provider}' is not available. Skipping summarization.")
+            return
+
+        for category in self.files_content:
+            for file_path, file_info in self.files_content[category].items():
+                if "content" in file_info:
+                    prompt = PromptFormatter.format_summarization_prompt(
+                        code=file_info["content"],
+                        filename=file_path
+                    )
+                    summary = llm.provider.generate(prompt)
+                    file_info["summary"] = summary.get("text", "")
+
+    def analyze(self, summarize=False, llm_provider="ollama", llm_model="gemma:7b"):
         """Analyze the codebase and return results.
         
         This method is used by the web interface and API to get analysis results.
@@ -544,6 +579,10 @@ class AllSeeingEye:
         # Create codebase summary
         self.codebase_summary = self.create_codebase_summary(self.files_content)
         
+        # Summarize files if requested
+        if summarize:
+            self.summarize_files(llm_provider=llm_provider, llm_model=llm_model)
+
         # Store results for later use
         self.results = {
             'directory_structure': self.directory_structure,
@@ -563,7 +602,7 @@ class AllSeeingEye:
         """Format the analysis results using the specified output format.
         
         Args:
-            output_format: The output format to use as a string ("markdown", "json", "text", "html")
+            output_format: The output format to use as a string ("markdown", "json", "text", "html", "interactive_html")
             
         Returns:
             str: The formatted output
@@ -593,6 +632,11 @@ class AllSeeingEye:
                 self.stats, 
                 self.codebase_summary
             )
+        elif output_format == "interactive_html":
+            exporter = InteractiveHTMLExporter()
+            output_file = "interactive_report.html"
+            exporter.export(self.results, output_file)
+            return f"Interactive HTML report saved to {output_file}"
         else:  # Default to text
             return OutputFormat.format_text(
                 self.directory_structure, 
@@ -601,13 +645,13 @@ class AllSeeingEye:
                 self.codebase_summary
             )
     
-    def run(self):
+    def run(self, summarize=False):
         """Run the AllSeeingEye tool and generate output."""
         logger.info(f"Analyzing directory: {self.directory}")
         logger.info(f"Output format: {self.output_format}")
 
         # Analyze the codebase
-        self.analyze()
+        self.analyze(summarize=summarize)
         
         # Generate output based on format
         output = self.format_output(self.output_format)
@@ -648,9 +692,10 @@ def parse_arguments():
                         help="Maximum file size in bytes to process (default: 1MB)")
     parser.add_argument("--max-files", "-mf", type=int, default=1000,
                         help="Maximum number of files to process (default: 1000)")
-    parser.add_argument("--format", "-f", choices=["markdown", "json", "text"],
+    parser.add_argument("--format", "-f", choices=["markdown", "json", "text", "interactive_html"],
                         default="markdown", help="Output format (default: markdown)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
+    parser.add_argument("--summarize", "-s", action="store_true", help="Enable summarization of files using an LLM")
 
     return parser.parse_args()
 
@@ -672,7 +717,7 @@ def main():
         verbose=args.verbose
     )
 
-    eye.run()
+    eye.run(summarize=args.summarize)
 
 
 if __name__ == "__main__":
