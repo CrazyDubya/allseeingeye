@@ -16,6 +16,12 @@ import hashlib
 from typing import List, Dict, Tuple, Optional, Set, Any, Union
 from pathlib import Path
 
+# Import LLM components
+from src.llm.integration import get_llm_integration
+from src.llm.prompt_formatter import PromptFormatter
+from src.formatters.exporters.interactive_html_exporter import InteractiveHTMLExporter
+from src.llm.rag_pipeline import RAGPipeline
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("AllSeeingEye")
@@ -123,8 +129,7 @@ class OutputFormat:
     """Output formatters for different file types"""
 
     @staticmethod
-    def format_markdown(directory_structure: str, files_content: Dict[str, Dict],
-                        stats: Dict[str, Any], codebase_summary: str) -> str:
+    def format_markdown(directory_structure: str, stats: Dict[str, Any], codebase_summary: str) -> str:
         """Format output as Markdown"""
         sections = []
 
@@ -155,39 +160,20 @@ class OutputFormat:
         sections.append(directory_structure)
         sections.append("```\n")
 
-        # Add file contents by category
-        for category in ["code", "documentation", "configuration", "data"]:
-            if category in files_content and files_content[category]:
-                sections.append(f"## {category.capitalize()} Files\n")
-
-                for file_path, file_info in files_content[category].items():
-                    sections.append(f"### {os.path.basename(file_path)}\n")
-                    sections.append(f"**Path:** {file_path}  ")
-                    sections.append(f"**Size:** {file_info.get('size_formatted', 'N/A')}  ")
-                    sections.append(f"**Last modified:** {file_info.get('last_modified', 'N/A')}  \n")
-
-                    if 'content' in file_info:
-                        sections.append("```" + OutputFormat._get_language_for_file(file_path))
-                        sections.append(file_info['content'])
-                        sections.append("```\n")
-
         return "\n".join(sections)
 
     @staticmethod
-    def format_json(directory_structure: str, files_content: Dict[str, Dict],
-                    stats: Dict[str, Any], codebase_summary: str) -> str:
+    def format_json(directory_structure: str, stats: Dict[str, Any], codebase_summary: str) -> str:
         """Format output as JSON"""
         output = {
             "statistics": stats,
             "codebase_summary": codebase_summary,
             "directory_structure": directory_structure,
-            "files_content": files_content
         }
         return json.dumps(output, indent=2)
 
     @staticmethod
-    def format_text(directory_structure: str, files_content: Dict[str, Dict],
-                    stats: Dict[str, Any], codebase_summary: str) -> str:
+    def format_text(directory_structure: str, stats: Dict[str, Any], codebase_summary: str) -> str:
         """Format output as plain text"""
         sections = []
 
@@ -221,23 +207,6 @@ class OutputFormat:
         sections.append("-" * 80)
         sections.append(directory_structure)
         sections.append("")
-
-        # Add file contents by category
-        for category in ["code", "documentation", "configuration", "data"]:
-            if category in files_content and files_content[category]:
-                sections.append(f"{category.upper()} FILES")
-                sections.append("-" * 80)
-
-                for file_path, file_info in files_content[category].items():
-                    sections.append(f"File: {file_path}")
-                    sections.append(f"Size: {file_info.get('size_formatted', 'N/A')}")
-                    sections.append(f"Last modified: {file_info.get('last_modified', 'N/A')}")
-                    sections.append("-" * 40)
-
-                    if 'content' in file_info:
-                        sections.append(file_info['content'])
-
-                    sections.append("")
 
         return "\n".join(sections)
 
@@ -321,6 +290,10 @@ class AllSeeingEye:
         # Initialize file type detection
         mimetypes.init()
 
+        # Initialize database
+        from src.db.database import Database
+        self.db = Database()
+
     def get_file_metadata(self, file_path: str) -> Dict[str, Any]:
         """Get file metadata including size, modification time, and mime type."""
         file_stat = os.stat(file_path)
@@ -380,46 +353,49 @@ class AllSeeingEye:
             logger.error(f"Error listing directory {directory}: {e}")
             return []
 
-    def process_file(self, file_path: str) -> Dict[str, Any]:
-        """Process a single file and return its content and metadata."""
-        result = {}
-
+    def process_file(self, file_path: str):
+        """Process a single file and store its information in the database."""
         try:
             # Get file metadata
             metadata = self.get_file_metadata(file_path)
-            result.update(metadata)
 
             # Check if file should be processed
             if not self.should_process_file(file_path, metadata):
-                return result
+                return
 
             # Get file category
             category = self.get_file_category(file_path)
 
-            # If it's a text category, read the content
+            # Insert file into database
+            file_id = self.db.insert_file(
+                path=os.path.relpath(file_path, self.directory),
+                category=category,
+                size=metadata["size"],
+                last_modified=metadata["last_modified"]
+            )
+
+            # If it's a text category, read the content and store chunks
             if FileCategory.is_text_category(category):
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                         content = file.read()
-                        result['content'] = content
-                        result['line_count'] = content.count('\n') + 1
-                        self.stats["total_lines"] += result['line_count']
+                        self.stats["total_lines"] += content.count('\n') + 1
+
+                        # Chunk the code and store the chunks
+                        from src.llm.code_chunker import CodeChunker
+                        chunker = CodeChunker()
+                        chunks = chunker.chunk(content, "python") # Assuming python for now
+                        for chunk_content in chunks:
+                            self.db.insert_chunk(file_id, chunk_content)
+
                 except Exception as e:
                     logger.error(f"Error reading file {file_path}: {e}")
-                    result['error'] = str(e)
 
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")
-            result['error'] = str(e)
 
-        return result
-
-    def build_tree(self, output_dictionary: Dict = None) -> str:
+    def build_tree(self) -> str:
         """Build a directory tree and collect file information."""
-        if output_dictionary is None:
-            output_dictionary = {}
-
-        # Use custom implementation for building tree
         tree_output = []
 
         def _build_tree_recursive(dir_path: str, prefix: str = ''):
@@ -442,6 +418,7 @@ class AllSeeingEye:
 
                 # Process file
                 self.stats["total_files"] += 1
+                self.process_file(file_path)
 
                 # Get file category
                 category = self.get_file_category(file_path)
@@ -454,18 +431,6 @@ class AllSeeingEye:
                 if self.stats["total_files"] >= self.max_files:
                     tree_output.append(f"{prefix}    --- File limit reached ({self.max_files} files) ---")
                     return False
-
-                # Process file content if needed
-                file_info = self.process_file(file_path)
-
-                # Update statistics
-                self.stats["total_size"] += file_info.get("size", 0)
-
-                # Add to output dictionary
-                if category in self.active_categories:
-                    if category not in output_dictionary:
-                        output_dictionary[category] = {}
-                    output_dictionary[category][rel_path] = file_info
 
             # Then process directories
             for i, entry in enumerate(dirs):
@@ -501,7 +466,7 @@ class AllSeeingEye:
 
         return '\n'.join(tree_output)
 
-    def create_codebase_summary(self, files_content):
+    def create_codebase_summary(self):
         """Create a summary of the codebase"""
         summary = []
 
@@ -528,28 +493,95 @@ class AllSeeingEye:
 
         return "\n".join(summary)
 
-    def analyze(self):
+    def generate_treemap_data(self):
+        """Generate treemap data."""
+        from src.visualization.codebase_structure import CodebaseStructure
+        treemap = CodebaseStructure(self.directory, self.excluded_dirs, self.excluded_files)
+        return treemap._build_real_treemap_data()
+
+    def generate_dependency_graph_data(self):
+        """Generate dependency graph data."""
+        from src.visualization.dependency_graph import DependencyGraph
+        dep_graph = DependencyGraph(self.directory, self.excluded_dirs, self.excluded_files)
+        return dep_graph._extract_dependencies()
+
+    def summarize_files(self, llm_provider="ollama", llm_model="gemma:7b"):
+        """Summarize each file in the codebase using an LLM."""
+        logger.info("Summarizing files...")
+        llm = get_llm_integration(provider=llm_provider, config={"model": llm_model})
+        if not llm.is_available():
+            logger.warning(f"LLM provider '{llm_provider}' is not available. Skipping summarization.")
+            return
+
+        chunks = self.db.get_all_chunks()
+        for chunk in chunks:
+            prompt = PromptFormatter.format_summarization_prompt(
+                code=chunk["content"],
+                filename=f"chunk_{chunk['id']}"
+            )
+            summary = llm.provider.generate(prompt)
+            # We need a way to store the summary for the chunk
+            # For now, I will just log it
+            logger.info(f"Summary for chunk {chunk['id']}: {summary.get('text', '')}")
+
+    def build_rag_pipeline(self, llm_provider="ollama", llm_model="gemma:7b"):
+        """Build the RAG pipeline."""
+        logger.info("Building RAG pipeline...")
+
+        chunks = self.db.get_all_chunks()
+        chunk_contents = [chunk["content"] for chunk in chunks]
+
+        from src.llm.embedding_generator import EmbeddingGenerator
+        embedder = EmbeddingGenerator()
+        embeddings = embedder.generate(chunk_contents)
+
+        for i, chunk in enumerate(chunks):
+            self.db.insert_embedding(chunk["id"], embeddings[i])
+
+        logger.info("RAG pipeline built.")
+
+    def query_rag_pipeline(self, query: str) -> str:
+        """Query the RAG pipeline."""
+        if not hasattr(self, "rag_pipeline"):
+            logger.warning("RAG pipeline not built. Please run analyze with build_rag=True.")
+            return ""
+        return self.rag_pipeline.query(query)
+
+    def analyze(self, summarize=False, build_rag=False, llm_provider="ollama", llm_model="gemma:7b"):
         """Analyze the codebase and return results.
         
         This method is used by the web interface and API to get analysis results.
         """
         logger.info(f"Analyzing directory: {self.directory}")
         
-        # Dictionary to store processed files by category
-        self.files_content = {}
-        
         # Build tree and collect file information
-        self.directory_structure = self.build_tree(self.files_content)
+        self.directory_structure = self.build_tree()
         
         # Create codebase summary
-        self.codebase_summary = self.create_codebase_summary(self.files_content)
-        
+        self.codebase_summary = self.create_codebase_summary()
+
+        # Summarize files if requested
+        if summarize:
+            self.summarize_files(llm_provider=llm_provider, llm_model=llm_model)
+
+        # Build RAG pipeline if requested
+        if build_rag:
+            self.build_rag_pipeline(llm_provider=llm_provider, llm_model=llm_model)
+
+        # Generate dependency graph data
+        self.dependency_graph_data = self.generate_dependency_graph_data()
+
+        # Generate treemap data
+        self.treemap_data = self.generate_treemap_data()
+
         # Store results for later use
         self.results = {
             'directory_structure': self.directory_structure,
             'files_content': self.files_content,
             'stats': self.stats,
-            'codebase_summary': self.codebase_summary
+            'codebase_summary': self.codebase_summary,
+            'dependency_graph': self.dependency_graph_data,
+            'treemap': self.treemap_data
         }
         
         logger.info(f"Analysis complete!")
@@ -563,7 +595,7 @@ class AllSeeingEye:
         """Format the analysis results using the specified output format.
         
         Args:
-            output_format: The output format to use as a string ("markdown", "json", "text", "html")
+            output_format: The output format to use as a string ("markdown", "json", "text", "html", "interactive_html")
             
         Returns:
             str: The formatted output
@@ -574,14 +606,12 @@ class AllSeeingEye:
         if output_format == "markdown":
             return OutputFormat.format_markdown(
                 self.directory_structure, 
-                self.files_content,
                 self.stats, 
                 self.codebase_summary
             )
         elif output_format == "json":
             return OutputFormat.format_json(
                 self.directory_structure, 
-                self.files_content,
                 self.stats, 
                 self.codebase_summary
             )
@@ -589,25 +619,28 @@ class AllSeeingEye:
             # For HTML format, use markdown format and let the Flask template handle it
             return OutputFormat.format_markdown(
                 self.directory_structure, 
-                self.files_content,
                 self.stats, 
                 self.codebase_summary
             )
+        elif output_format == "interactive_html":
+            exporter = InteractiveHTMLExporter()
+            output_file = "interactive_report.html"
+            exporter.export(self.results, output_file)
+            return f"Interactive HTML report saved to {output_file}"
         else:  # Default to text
             return OutputFormat.format_text(
                 self.directory_structure, 
-                self.files_content,
                 self.stats, 
                 self.codebase_summary
             )
     
-    def run(self):
+    def run(self, summarize=False, build_rag=False):
         """Run the AllSeeingEye tool and generate output."""
         logger.info(f"Analyzing directory: {self.directory}")
         logger.info(f"Output format: {self.output_format}")
 
         # Analyze the codebase
-        self.analyze()
+        self.analyze(summarize=summarize, build_rag=build_rag)
         
         # Generate output based on format
         output = self.format_output(self.output_format)
@@ -648,9 +681,11 @@ def parse_arguments():
                         help="Maximum file size in bytes to process (default: 1MB)")
     parser.add_argument("--max-files", "-mf", type=int, default=1000,
                         help="Maximum number of files to process (default: 1000)")
-    parser.add_argument("--format", "-f", choices=["markdown", "json", "text"],
+    parser.add_argument("--format", "-f", choices=["markdown", "json", "text", "interactive_html"],
                         default="markdown", help="Output format (default: markdown)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
+    parser.add_argument("--summarize", "-s", action="store_true", help="Enable summarization of files using an LLM")
+    parser.add_argument("--build-rag", "-r", action="store_true", help="Enable RAG pipeline for Q&A")
 
     return parser.parse_args()
 
@@ -672,7 +707,7 @@ def main():
         verbose=args.verbose
     )
 
-    eye.run()
+    eye.run(summarize=args.summarize, build_rag=args.build_rag)
 
 
 if __name__ == "__main__":

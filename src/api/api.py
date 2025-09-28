@@ -435,13 +435,14 @@ def create_app():
         if not hasattr(app, "webhooks"):
             app.webhooks = {}
         
+        import datetime
         app.webhooks[webhook_id] = {
             "id": webhook_id,
             "url": config.url,
             "events": config.events,
             "headers": config.headers or {},
             "created_by": client_ip,
-            "created_at": import datetime; datetime.datetime.now().isoformat()
+            "created_at": datetime.datetime.now().isoformat()
         }
         
         return {
@@ -779,10 +780,11 @@ def create_app():
         
         for webhook_id, webhook in app.webhooks.items():
             if event in webhook["events"]:
+                import datetime
                 # Prepare payload
                 payload = {
                     "event": event,
-                    "timestamp": import datetime; datetime.datetime.now().isoformat(),
+                    "timestamp": datetime.datetime.now().isoformat(),
                     "data": data
                 }
                 
@@ -855,7 +857,8 @@ def create_app():
             tasks[task_id]["message"] = "Dependency graph generated"
             tasks[task_id]["result"] = stats
             tasks[task_id]["output_file"] = output_file
-            tasks[task_id]["completion_time"] = import time; time.time()
+            import time
+            tasks[task_id]["completion_time"] = time.time()
             
             # Trigger webhooks if configured
             if hasattr(app, "webhooks"):
@@ -937,7 +940,8 @@ def create_app():
             tasks[task_id]["message"] = "Treemap visualization generated"
             tasks[task_id]["result"] = stats
             tasks[task_id]["output_file"] = output_file
-            tasks[task_id]["completion_time"] = import time; time.time()
+            import time
+            tasks[task_id]["completion_time"] = time.time()
             
             # Trigger webhooks if configured
             if hasattr(app, "webhooks"):
@@ -1014,7 +1018,8 @@ def create_app():
             tasks[task_id]["message"] = "Metrics dashboard generated"
             tasks[task_id]["result"] = metrics_data
             tasks[task_id]["output_file"] = output_file
-            tasks[task_id]["completion_time"] = import time; time.time()
+            import time
+            tasks[task_id]["completion_time"] = time.time()
             
             # Trigger webhooks if configured
             if hasattr(app, "webhooks"):
@@ -1123,7 +1128,8 @@ def create_app():
             }
             tasks[task_id]["output_file"] = similarity_output
             tasks[task_id]["suggestions_file"] = suggestions_output if suggestions else None
-            tasks[task_id]["completion_time"] = import time; time.time()
+            import time
+            tasks[task_id]["completion_time"] = time.time()
             
             # Trigger webhooks if configured
             if hasattr(app, "webhooks"):

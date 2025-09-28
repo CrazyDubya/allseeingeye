@@ -357,3 +357,56 @@ class PromptFormatter:
         }
         
         return PromptFormatter.format_prompt(PromptTemplates.SECURITY_AUDIT, variables)
+
+    @staticmethod
+    def format_summarization_prompt(
+        code: str,
+        filename: Optional[str] = None,
+        language: Optional[str] = None
+    ) -> str:
+        """
+        Format a code summarization prompt.
+
+        Args:
+            code: The code to summarize
+            filename: Optional filename
+            language: Optional language identifier
+
+        Returns:
+            Formatted prompt string
+        """
+        # Determine language from filename if not specified
+        if language is None and filename is not None:
+            ext = os.path.splitext(filename)[1].lower()
+            language_map = {
+                '.py': 'python',
+                '.js': 'javascript',
+                '.jsx': 'jsx',
+                '.ts': 'typescript',
+                '.tsx': 'tsx',
+                '.java': 'java',
+                '.c': 'c',
+                '.cpp': 'cpp',
+                '.cs': 'csharp',
+                '.go': 'go',
+                '.rb': 'ruby',
+                '.php': 'php',
+                '.html': 'html',
+                '.css': 'css',
+                '.sql': 'sql',
+                '.sh': 'bash',
+            }
+            language = language_map.get(ext, 'text')
+
+        # Use default values if still not specified
+        filename = filename or "unknown_file"
+        language = language or "text"
+
+        # Format the prompt
+        variables = {
+            'code': code,
+            'filename': filename,
+            'language': language
+        }
+
+        return PromptFormatter.format_prompt(PromptTemplates.CODE_SUMMARIZATION, variables)

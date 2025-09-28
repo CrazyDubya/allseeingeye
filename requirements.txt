@@ -27,4 +27,6 @@ PyQt6~=6.8.1
 psutil~=7.0.0
 Flask-Bootstrap~=3.3.7.1
 WTForms~=3.2.1
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
 ollama~=0.4.7

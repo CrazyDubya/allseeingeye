@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AllSeeingEye Interactive Report</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        File Explorer
+                    </div>
+                    <div class="card-body">
+                        <input type="text" id="search-input" class="form-control mb-2" placeholder="Search...">
+                        <div id="tree"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab" aria-controls="summary" aria-selected="true">Summary</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="content-tab" data-bs-toggle="tab" data-bs-target="#content" type="button" role="tab" aria-controls="content" aria-selected="false">Content</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="qa-tab" data-bs-toggle="tab" data-bs-target="#qa" type="button" role="tab" aria-controls="qa" aria-selected="false">Q&A</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="deps-tab" data-bs-toggle="tab" data-bs-target="#deps" type="button" role="tab" aria-controls="deps" aria-selected="false">Dependencies</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="treemap-tab" data-bs-toggle="tab" data-bs-target="#treemap" type="button" role="tab" aria-controls="treemap" aria-selected="false">Treemap</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="myTabContent">
+                            <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                                <h2 id="summary-filename"></h2>
+                                <p id="summary-content"></p>
+                            </div>
+                            <div class="tab-pane fade" id="qa" role="tabpanel" aria-labelledby="qa-tab">
+                                <div class="input-group mb-3">
+                                    <input type="text" id="qa-input" class="form-control" placeholder="Ask a question about the codebase...">
+                                    <button class="btn btn-primary" type="button" id="qa-button">Ask</button>
+                                </div>
+                                <div id="qa-result"></div>
+                            </div>
+                            <div class="tab-pane fade" id="content" role="tabpanel" aria-labelledby="content-tab">
+                                <h2 id="content-filename"></h2>
+                                <pre><code id="code-content" class="python"></code></pre>
+                            </div>
+                            <div class="tab-pane fade" id="deps" role="tabpanel" aria-labelledby="deps-tab">
+                                <svg id="deps-svg"></svg>
+                            </div>
+                            <div class="tab-pane fade" id="treemap" role="tabpanel" aria-labelledby="treemap-tab">
+                                <svg id="treemap-svg"></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const data = __DATA__;
+
+        // Tree view
+        function buildTreeData(files) {
+            const treeData = [];
+            const pathMap = {};
+
+            for (const category in files) {
+                for (const filepath in files[category]) {
+                    const parts = filepath.split('/');
+                    let currentLevel = treeData;
+                    let currentPath = '';
+
+                    for (let i = 0; i < parts.length; i++) {
+                        const part = parts[i];
+                        currentPath += (i > 0 ? '/' : '') + part;
+
+                        let node = pathMap[currentPath];
+                        if (!node) {
+                            node = {
+                                id: currentPath,
+                                text: part,
+                                children: i < parts.length - 1 ? [] : null
+                            };
+                            if (i < parts.length - 1) {
+                                node.type = 'directory';
+                            } else {
+                                node.type = 'file';
+                                node.li_attr = { 'data-filepath': filepath, 'data-category': category };
+                            }
+                            pathMap[currentPath] = node;
+                            currentLevel.push(node);
+                        }
+
+                        if (node.children) {
+                            currentLevel = node.children;
+                        }
+                    }
+                }
+            }
+            return treeData;
+        }
+
+        const treeData = buildTreeData(data.files_content);
+        $('#tree').jstree({
+            'core': {
+                'data': treeData
+            },
+            'plugins': ['search']
+        }).on('select_node.jstree', function (e, data) {
+            const node = data.node;
+            if (node.type === 'file') {
+                const filepath = node.li_attr['data-filepath'];
+                const category = node.li_attr['data-category'];
+                const fileInfo = window.data.files_content[category][filepath];
+
+                // Update summary tab
+                $('#summary-filename').text(filepath);
+                $('#summary-content').text(fileInfo.summary || 'No summary available.');
+
+                // Update content tab
+                $('#content-filename').text(filepath);
+                $('#code-content').text(fileInfo.content);
+                hljs.highlightElement($('#code-content')[0]);
+            }
+        });
+
+        // Tabs
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        document.getElementById("defaultOpen").click();
+
+        $('#search-input').on('keyup', function () {
+            $('#tree').jstree(true).search($(this).val());
+        });
+
+        // Visualizations
+        const width = 800;
+        const height = 600;
+
+        // Dependency graph
+        const depsSvg = d3.select("#deps-svg").attr("width", width).attr("height", height);
+        const depsData = data.dependency_graph;
+
+        const simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        const link = depsSvg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(depsData.links)
+            .enter().append("line")
+            .attr("class", "link")
+            .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+        const node = depsSvg.append("g")
+            .attr("class", "nodes")
+            .selectAll("g")
+            .data(depsData.nodes)
+            .enter().append("g");
+
+        node.append("circle")
+            .attr("class", "node")
+            .attr("r", 6)
+            .attr("fill", function(d) { return d3.schemeCategory10[d.group % 10]; })
+            .on("click", function(event, d) {
+                $('#tree').jstree(true).deselect_all();
+                $('#tree').jstree(true).select_node(d.id);
+                openTab(event, 'content');
+            })
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append("text")
+            .attr("dx", 12)
+            .attr("dy", ".35em")
+            .text(function(d) { return d.name || d.id; });
+
+        simulation
+            .nodes(depsData.nodes)
+            .on("tick", ticked);
+
+        simulation.force("link")
+            .links(depsData.links);
+
+        function ticked() {
+            link
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
+
+            node
+                .attr("transform", function(d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                });
+        }
+
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Q&A
+        $('#qa-button').on('click', function () {
+            const query = $('#qa-input').val();
+            if (query) {
+                $('#qa-result').html('<div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>');
+                $.ajax({
+                    url: '/query',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ query: query }),
+                    success: function (data) {
+                        $('#qa-result').text(data.answer);
+                    },
+                    error: function () {
+                        $('#qa-result').text('An error occurred.');
+                    }
+                });
+            }
+        });
+
+        // Treemap
+        const treemapSvg = d3.select("#treemap-svg").attr("width", width).attr("height", height);
+        const treemapData = data.treemap;
+
+        const treemap = d3.treemap()
+            .size([width, height])
+            .paddingTop(28)
+            .paddingRight(5)
+            .paddingBottom(5)
+            .paddingLeft(5)
+            .round(true);
+
+        const root = d3.hierarchy(treemapData)
+            .sum(function(d) { return d.value; })
+            .sort(function(a, b) { return b.value - a.value; });
+
+        treemap(root);
+
+        const cell = treemapSvg.selectAll("g")
+            .data(root.descendants())
+            .enter()
+            .append("g")
+            .attr("transform", function(d) {
+                return "translate(" + d.x0 + "," + d.y0 + ")";
+            });
+
+        cell.append("rect")
+            .attr("width", function(d) { return d.x1 - d.x0; })
+            .attr("height", function(d) { return d.y1 - d.y0; })
+            .attr("fill", function(d) {
+                return d.children ? "none" : d3.schemeCategory10[d.data.type.length % 10];
+            })
+            .attr("stroke", function(d) {
+                return d.children ? "#ccc" : "white";
+            })
+            .on("click", function(event, d) {
+                if (!d.children) {
+                    $('#tree').jstree(true).deselect_all();
+                    $('#tree').jstree(true).select_node(d.data.name);
+                    openTab(event, 'content');
+                }
+            });
+
+        cell.append("text")
+            .attr("class", "label")
+            .attr("x", 5)
+            .attr("y", 20)
+            .text(function(d) { return d.data.name; })
+            .style("font-size", function(d) {
+                const width = d.x1 - d.x0;
+                const height = d.y1 - d.y0;
+                return Math.min(width, height) > 50 ? "12px" : "8px";
+            })
+            .style("fill", function(d) {
+                if (d.children) return "#333";
+                const brightness = d3.hsl(d3.schemeCategory10[d.data.type.length % 10]).l;
+                return brightness > 0.5 ? "#333" : "#fff";
+            })
+            .attr("dy", ".35em")
+            .each(function(d) {
+                const width = d.x1 - d.x0;
+                if (width < 40) d3.select(this).style("display", "none");
+            });
+
+    </script>
+</body>
+</html>
