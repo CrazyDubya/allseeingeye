@@ -45,8 +45,12 @@ class SecurityUtils:
         # If base directory is specified, ensure path is within it
         if base_dir:
             base_dir = os.path.normpath(os.path.abspath(base_dir))
-            if not normalized_path.startswith(base_dir):
-                return False, f"Path {normalized_path} is outside the base directory {base_dir}"
+            try:
+                if os.path.commonpath([base_dir, normalized_path]) != base_dir:
+                    return False, f"Path {normalized_path} is outside the base directory {base_dir}"
+            except ValueError:
+                # This can happen if paths are on different drives on Windows
+                return False, f"Path {normalized_path} is on a different drive than base directory {base_dir}"
         
         # Check for suspicious path components
         suspicious_patterns = [
@@ -327,12 +331,12 @@ class SecurityUtils:
             if match:
                 # This is a simple check - in a real system, you'd want more context
                 # and possibly a whitelist approach for trusted patterns
-                return True, f"Found potentially unsafe pattern: {match.group(0)}"
+                return False, f"Found potentially unsafe pattern: {match.group(0)}"
         
         # Check for emojis with hidden data
         sanitized_content, emoji_count = SecurityUtils.sanitize_emojis(content)
         if emoji_count > 0:
-            return True, f"Found and sanitized {emoji_count} emojis that might contain hidden data"
+            return False, f"Found and sanitized {emoji_count} emojis that might contain hidden data"
         
         return True, ""
     
