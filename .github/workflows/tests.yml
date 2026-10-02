@@ -36,11 +36,11 @@ jobs:
     
     - name: Type check with mypy
       run: |
-        mypy --ignore-missing-imports allseeingeye
+        mypy --ignore-missing-imports allseeingeye.py
     
     - name: Test with pytest
       run: |
-        pytest --cov=allseeingeye --cov-report=xml
+        pytest --cov=allseeingeye.py --cov-report=xml
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

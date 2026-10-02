@@ -96,7 +96,7 @@ class FileCategory:
     }
 
     @classmethod
-    def get_extensions_by_category(cls, category: str) -> List[str]:
+    def get_extensions_by_category(cls, category: str) -> Any:
         """Get all extensions for a given category"""
         if category in cls.CATEGORIES:
             return cls.CATEGORIES[category]["extensions"]
@@ -278,7 +278,7 @@ class AllSeeingEye:
             logger.setLevel(logging.DEBUG)
 
         # Statistics
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             "total_files": 0,
             "total_dirs": 0,
             "total_size": 0,
@@ -312,10 +312,12 @@ class AllSeeingEye:
 
     def _format_size(self, size_bytes: int) -> str:
         """Format file size in human-readable format."""
+        size_float = float(size_bytes)
         for unit in ['B', 'KB', 'MB', 'GB']:
-            if size_bytes < 1024 or unit == 'GB':
-                return f"{size_bytes:.2f} {unit}"
-            size_bytes /= 1024
+            if size_float < 1024 or unit == 'GB':
+                return f"{size_float:.2f} {unit}"
+            size_float /= 1024
+        return "0 B"""
 
     def should_process_file(self, file_path: str, metadata: Dict[str, Any]) -> bool:
         """Determine if a file should be processed based on rules."""
@@ -345,7 +347,7 @@ class AllSeeingEye:
         _, ext = os.path.splitext(file_path)
         return FileCategory.get_category_for_extension(ext)
 
-    def list_directory(self, directory: str) -> List[str]:
+    def list_directory(self, directory: str) -> Any:
         """List directory contents in a cross-platform way."""
         try:
             return os.listdir(directory)
