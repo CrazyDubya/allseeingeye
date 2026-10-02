@@ -131,17 +131,17 @@ class MetricsDashboard:
             
             <script>
                 // Extract file category data from stats
-                const fileCategories = {
+                const fileCategories = {{
                     labels: ['Code', 'Documentation', 'Configuration', 'Data', 'Media', 'Other'],
                     data: [
-                        {stats.get('files_by_category', {}).get('code', 0)},
-                        {stats.get('files_by_category', {}).get('documentation', 0)},
-                        {stats.get('files_by_category', {}).get('configuration', 0)},
-                        {stats.get('files_by_category', {}).get('data', 0)},
-                        {stats.get('files_by_category', {}).get('media', 0)},
-                        {stats.get('files_by_category', {}).get('other', 0)}
+                        {stats.get('files_by_category', dict()).get('code', 0)},
+                        {stats.get('files_by_category', dict()).get('documentation', 0)},
+                        {stats.get('files_by_category', dict()).get('configuration', 0)},
+                        {stats.get('files_by_category', dict()).get('data', 0)},
+                        {stats.get('files_by_category', dict()).get('media', 0)},
+                        {stats.get('files_by_category', dict()).get('other', 0)}
                     ]
-                };
+                }};
                 
                 // Sample size distribution for demonstration
                 const sizeDistribution = {{

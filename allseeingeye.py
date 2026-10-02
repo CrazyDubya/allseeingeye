@@ -577,7 +577,7 @@ class AllSeeingEye:
         # Store results for later use
         self.results = {
             'directory_structure': self.directory_structure,
-            'files_content': self.files_content,
+            'files_content': getattr(self, 'files_content', {}),
             'stats': self.stats,
             'codebase_summary': self.codebase_summary,
             'dependency_graph': self.dependency_graph_data,

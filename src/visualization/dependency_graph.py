@@ -87,7 +87,7 @@ class DependencyGraph:
                 
                 // Create the simulation
                 const simulation = d3.forceSimulation()
-                    .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(100))
+                    .force("link", d3.forceLink().id(function(d) {{ return d.id; }}).distance(100))
                     .force("charge", d3.forceManyBody().strength(-300))
                     .force("center", d3.forceCenter(width / 2, height / 2));
                 
@@ -98,7 +98,7 @@ class DependencyGraph:
                     .data(data.links)
                     .enter().append("line")
                     .attr("class", "link")
-                    .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+                    .attr("stroke-width", function(d) {{ return Math.sqrt(d.value); }});
                 
                 // Add the nodes
                 const node = svg.append("g")
@@ -110,7 +110,7 @@ class DependencyGraph:
                 node.append("circle")
                     .attr("class", "node")
                     .attr("r", 6)
-                    .attr("fill", function(d) { return d3.schemeCategory10[d.group % 10]; })
+                    .attr("fill", function(d) {{ return d3.schemeCategory10[d.group % 10]; }})
                     .call(d3.drag()
                         .on("start", dragstarted)
                         .on("drag", dragged)
@@ -119,7 +119,7 @@ class DependencyGraph:
                 node.append("text")
                     .attr("dx", 12)
                     .attr("dy", ".35em")
-                    .text(function(d) { return d.name || d.id; });
+                    .text(function(d) {{ return d.name || d.id; }});
                 
                 // Update the simulation
                 simulation
@@ -129,35 +129,35 @@ class DependencyGraph:
                 simulation.force("link")
                     .links(data.links);
                 
-                function ticked() {
+                function ticked() {{
                     link
-                        .attr("x1", function(d) { return d.source.x; })
-                        .attr("y1", function(d) { return d.source.y; })
-                        .attr("x2", function(d) { return d.target.x; })
-                        .attr("y2", function(d) { return d.target.y; });
+                        .attr("x1", function(d) {{ return d.source.x; }})
+                        .attr("y1", function(d) {{ return d.source.y; }})
+                        .attr("x2", function(d) {{ return d.target.x; }})
+                        .attr("y2", function(d) {{ return d.target.y; }});
                 
                     node
-                        .attr("transform", function(d) { 
+                        .attr("transform", function(d) {{
                             return "translate(" + d.x + "," + d.y + ")";
-                        });
-                }
+                        }});
+                }}
                 
-                function dragstarted(event, d) {
+                function dragstarted(event, d) {{
                     if (!event.active) simulation.alphaTarget(0.3).restart();
                     d.fx = d.x;
                     d.fy = d.y;
-                }
+                }}
                 
-                function dragged(event, d) {
+                function dragged(event, d) {{
                     d.fx = event.x;
                     d.fy = event.y;
-                }
+                }}
                 
-                function dragended(event, d) {
+                function dragended(event, d) {{
                     if (!event.active) simulation.alphaTarget(0);
                     d.fx = null;
                     d.fy = null;
-                }
+                }}
             </script>
         </body>
         </html>
@@ -420,11 +420,13 @@ class DependencyGraph:
     def __init__(self,
                  base_directory: str,
                  excluded_dirs: Optional[List[str]] = None,
+                 excluded_files: Optional[List[str]] = None,
                  max_file_size: int = 1024 * 1024,  # 1MB default
                  cache_dir: Optional[str] = None):
         """Initialize with configurable options."""
         self.base_directory = os.path.abspath(base_directory)
         self.excluded_dirs = set(excluded_dirs or ['.git', 'node_modules', '.venv', '__pycache__', '.idea', '.vscode'])
+        self.excluded_files = set(excluded_files or [])
         self.max_file_size = max_file_size
         self.graph = nx.DiGraph()
         self.cache_dir = cache_dir
