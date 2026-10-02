@@ -6,6 +6,7 @@ Main window for AllSeeingEye GUI
 import os
 import sys
 import logging
+logger = logging.getLogger(__name__)
 from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 

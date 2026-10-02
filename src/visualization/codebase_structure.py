@@ -25,6 +25,10 @@ class CodebaseTreemap:
     interactive treemap visualizations showing file sizes, types,
     and directory organization.
     """
+    def __init__(self, base_directory, excluded_dirs=None, excluded_files=None, **kwargs):
+        self.base_directory = base_directory
+        self.excluded_dirs = excluded_dirs or []
+        self.excluded_files = excluded_files or []
     
 # Add the CodebaseStructure wrapper class for backward compatibility
 class CodebaseStructure:
@@ -35,6 +39,9 @@ class CodebaseStructure:
     
     def __init__(self, base_directory, excluded_dirs=None, excluded_files=None, **kwargs):
         """Initialize with the treemap visualization."""
+        self.base_directory = base_directory
+        self.excluded_dirs = excluded_dirs or []
+        self.excluded_files = excluded_files or []
         self.treemap = CodebaseTreemap(
             base_directory=base_directory,
             excluded_dirs=excluded_dirs,
@@ -102,8 +109,8 @@ class CodebaseStructure:
                 
                 // Create the hierarchy from the data
                 const root = d3.hierarchy(data)
-                    .sum(function(d) { return d.value; })
-                    .sort(function(a, b) { return b.value - a.value; });
+                    .sum(function(d) {{ return d.value; }})
+                    .sort(function(a, b) {{ return b.value - a.value; }});
                 
                 // Compute the treemap layout
                 treemap(root);
@@ -119,42 +126,42 @@ class CodebaseStructure:
                     .data(root.descendants())
                     .enter()
                     .append("g")
-                    .attr("transform", function(d) { 
+                    .attr("transform", function(d) {{
                         return "translate(" + d.x0 + "," + d.y0 + ")"; 
-                    });
+                    }});
                 
                 // Add the rectangles
                 cell.append("rect")
-                    .attr("width", function(d) { return d.x1 - d.x0; })
-                    .attr("height", function(d) { return d.y1 - d.y0; })
-                    .attr("fill", function(d) { 
+                    .attr("width", function(d) {{ return d.x1 - d.x0; }})
+                    .attr("height", function(d) {{ return d.y1 - d.y0; }})
+                    .attr("fill", function(d) {{
                         return d.children ? "none" : colorScale(d.data.type || "other"); 
-                    })
-                    .attr("stroke", function(d) { 
+                    }})
+                    .attr("stroke", function(d) {{
                         return d.children ? "#ccc" : "white"; 
-                    });
+                    }});
                 
                 // Add the labels
                 cell.append("text")
                     .attr("class", "label")
                     .attr("x", 5)
                     .attr("y", 20)
-                    .text(function(d) { return d.data.name; })
-                    .style("font-size", function(d) {
+                    .text(function(d) {{ return d.data.name; }})
+                    .style("font-size", function(d) {{
                         const width = d.x1 - d.x0;
                         const height = d.y1 - d.y0;
                         return Math.min(width, height) > 50 ? "12px" : "8px";
-                    })
-                    .style("fill", function(d) {
+                    }})
+                    .style("fill", function(d) {{
                         if (d.children) return "#333";
                         const brightness = d3.hsl(colorScale(d.data.type || "other")).l;
                         return brightness > 0.5 ? "#333" : "#fff";
-                    })
+                    }})
                     .attr("dy", ".35em")
-                    .each(function(d) {
+                    .each(function(d) {{
                         const width = d.x1 - d.x0;
                         if (width < 40) d3.select(this).style("display", "none");
-                    });
+                    }});
                 
                 // Create the legend
                 const legend = d3.select("#legend")
@@ -165,7 +172,7 @@ class CodebaseStructure:
                 const legendItems = ["code", "documentation", "configuration", "data", "other"];
                 const legendWidth = 120;
                 
-                legendItems.forEach(function(item, i) {
+                legendItems.forEach(function(item, i) {{
                     const g = legend.append("g")
                         .attr("transform", "translate(" + (i * legendWidth + 10) + ", 10)");
                     
@@ -178,7 +185,7 @@ class CodebaseStructure:
                         .attr("x", 20)
                         .attr("y", 12)
                         .text(item.charAt(0).toUpperCase() + item.slice(1));
-                });
+                }});
             </script>
         </body>
         </html>
@@ -667,7 +674,7 @@ class CodebaseStructure:
 
     <script>
     // Initial data
-    const initialData = {JSON.dumps(self.treemap_data)};
+    const initialData = {json.dumps(self.treemap_data)};
     let currentData = initialData;
     let breadcrumbHistory = [];
     let colorBy = "category";
@@ -951,7 +958,7 @@ class CodebaseStructure:
         
         # Helper function to traverse the tree
         def traverse(node, level=0):
-            nonlocal stats
+            # nonlocal stats
             
             if level > stats['deepest_level']:
                 stats['deepest_level'] = level

@@ -6,6 +6,7 @@ This module provides functionality to tokenize code files in various
 programming languages for similarity analysis.
 """
 
+import tempfile
 import re
 import os
 import logging
