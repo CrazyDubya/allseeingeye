@@ -674,7 +674,7 @@ class CodebaseStructure:
 
     <script>
     // Initial data
-    const initialData = {JSON.dumps(self.treemap_data)};
+    const initialData = {json.dumps(self.treemap_data)};
     let currentData = initialData;
     let breadcrumbHistory = [];
     let colorBy = "category";
@@ -958,7 +958,7 @@ class CodebaseStructure:
         
         # Helper function to traverse the tree
         def traverse(node, level=0):
-            nonlocal stats
+            # nonlocal stats
             
             if level > stats['deepest_level']:
                 stats['deepest_level'] = level

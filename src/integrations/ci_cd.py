@@ -3,6 +3,7 @@
 CI/CD integration for AllSeeingEye
 """
 
+import shutil
 import os
 import json
 import logging

@@ -6,6 +6,7 @@ This module analyzes code similarity results and generates
 actionable refactoring suggestions to reduce code duplication.
 """
 
+from collections import Counter
 import os
 import re
 import logging

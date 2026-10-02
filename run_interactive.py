@@ -12,7 +12,6 @@ eye = None
 
 @app.route('/')
 def index():
-    global eye
     if eye is None:
         return "Please run the analysis first."
 
@@ -31,7 +30,6 @@ def index():
 
 @app.route('/query', methods=['POST'])
 def query():
-    global eye
     if eye is None:
         return jsonify({"error": "Analysis not run."}), 500
 
