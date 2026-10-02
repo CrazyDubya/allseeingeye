@@ -244,7 +244,7 @@ class FileTypeDispatcher:
             Dictionary mapping file paths to processing results
         """
         # Group files by type
-        files_by_type = {}
+        files_by_type: dict = {}
         
         for file_path in files:
             file_type = self.file_type_func(file_path)

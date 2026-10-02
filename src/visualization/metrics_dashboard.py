@@ -58,7 +58,7 @@ class MetricsDashboard:
             'directory_size', 'file_size_distribution', 'code_to_comment_ratio'
         ]
         
-        self.metrics_data = {}
+        self.metrics_data: dict = {}
         self.cache_dir = cache_dir
         self.cache_file = os.path.join(cache_dir, 'metrics_dashboard.json') if cache_dir else None
         
@@ -349,7 +349,7 @@ class MetricsDashboard:
                 {'path': path, 'size': size} 
                 for path, size in directory_sizes.items()
             ]
-            dir_size_list.sort(key=lambda x: x['size'], reverse=True)
+            dir_size_list.sort(key=lambda x: float(str(x['size'])), reverse=True)
             self.metrics_data['directory_sizes'] = dir_size_list[:20]  # Top 20 directories
         
         if 'complexity' in self.metrics:
@@ -475,10 +475,10 @@ class MetricsDashboard:
             Dict[str, Any]: Size distribution statistics
         """
         # Sort files by size
-        file_sizes.sort(key=lambda x: x['size'], reverse=True)
+        file_sizes.sort(key=lambda x: float(str(x['size'])), reverse=True)
         
         # Calculate distribution
-        distribution = {
+        distribution: Dict[str, Any] = {
             'largest_files': file_sizes[:20],  # Top 20 largest files
             'size_ranges': {
                 '0-1KB': 0,
@@ -533,7 +533,7 @@ class MetricsDashboard:
             Dict[str, Any]: Complexity metrics
         """
         # Initialize complexity metrics
-        complexity = {
+        complexity: Dict[str, Any] = {
             'cyclomatic_complexity': {},
             'max_complexity_files': [],
             'avg_complexity_by_language': {},
@@ -661,7 +661,7 @@ class MetricsDashboard:
                         
                         # Add long/complex functions
                         for func in functions:
-                            if func['lines'] > 50 or func['complexity'] > 10:
+                            if int(str(func['lines'])) > 50 or int(str(func['complexity'])) > 10:
                                 complexity['long_functions'].append({
                                     'file': rel_path,
                                     'name': func['name'],
@@ -1734,9 +1734,10 @@ class MetricsDashboard:
         logger.info(f"Metrics data exported to {output_file}")
         return output_file
     
-    def _format_size(self, size_bytes: int) -> str:
+    def _format_size(self, size_bytes: float) -> str:
         """Format file size in human-readable format."""
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
             if size_bytes < 1024 or unit == 'TB':
                 return f"{size_bytes:.2f} {unit}"
             size_bytes /= 1024
+        return "0.00 B"

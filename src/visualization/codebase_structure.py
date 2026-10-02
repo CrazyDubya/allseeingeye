@@ -217,7 +217,7 @@ class CodebaseStructure:
                 return 'other'
         
         # Track directories we've already added
-        dir_nodes = {}
+        dir_nodes: dict = {}
         
         # Walk through the directory and build the tree
         for root_path, dirs, files in os.walk(self.base_directory):
@@ -1001,17 +1001,18 @@ class CodebaseStructure:
         
         # Format size values
         for category in stats['categories']:
-            stats['categories'][category]['size_formatted'] = self._format_size(stats['categories'][category]['size'])
+            stats['categories'][category]['size_formatted'] = self._format_size(float(str(stats['categories'][category]['size'])))
         
-        stats['total_size_formatted'] = self._format_size(stats['total_size'])
-        stats['max_file_size_formatted'] = self._format_size(stats['max_file_size'])
-        stats['max_directory_size_formatted'] = self._format_size(stats['max_directory_size'])
+        stats['total_size_formatted'] = self._format_size(float(str(stats['total_size'])))
+        stats['max_file_size_formatted'] = self._format_size(float(str(stats['max_file_size'])))
+        stats['max_directory_size_formatted'] = self._format_size(float(str(stats['max_directory_size'])))
         
         return stats
     
-    def _format_size(self, size_bytes: int) -> str:
+    def _format_size(self, size_bytes: float) -> str:
         """Format file size in human-readable format."""
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
             if size_bytes < 1024 or unit == 'TB':
                 return f"{size_bytes:.2f} {unit}"
             size_bytes /= 1024
+        return "0.00 B"

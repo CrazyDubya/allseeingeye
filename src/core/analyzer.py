@@ -104,7 +104,7 @@ class Analyzer:
         logger.info(f"Output format: {self.output_format}")
         
         # Dictionary to store processed files by category
-        files_content = {}
+        files_content: dict = {}
         
         # Build tree and collect file information
         logger.info("Building directory tree...")

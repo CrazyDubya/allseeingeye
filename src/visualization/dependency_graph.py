@@ -187,7 +187,7 @@ class DependencyGraph:
             '.php': 'php'
         }
         
-        nodes = []
+        nodes: list = []
         links = []
         processed_files = set()
         file_to_node_id = {}
@@ -276,7 +276,7 @@ class DependencyGraph:
         Returns:
             List of dependencies found in the file
         """
-        dependencies = []
+        dependencies: list = []
         
         # Get patterns for this language
         patterns = self.IMPORT_PATTERNS.get(language, [])

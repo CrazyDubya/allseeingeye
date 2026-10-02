@@ -278,7 +278,7 @@ class AllSeeingEye:
             logger.setLevel(logging.DEBUG)
 
         # Statistics
-        self.stats: Dict[str, Any] = {
+        self.stats: Any = {
             "total_files": 0,
             "total_dirs": 0,
             "total_size": 0,

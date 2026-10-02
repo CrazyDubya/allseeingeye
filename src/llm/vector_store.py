@@ -5,7 +5,7 @@ Vector store utilities for AllSeeingEye.
 
 import faiss
 import numpy as np
-from typing import List
+from typing import List, Any
 
 class VectorStore:
     """Stores and searches vector embeddings."""
@@ -13,7 +13,7 @@ class VectorStore:
     def __init__(self, dimension: int):
         self.dimension = dimension
         self.index = faiss.IndexFlatL2(dimension)
-        self.chunks = []
+        self.chunks: list[Any] = []
 
     def add(self, embeddings: List[List[float]], chunks: List[str]):
         """

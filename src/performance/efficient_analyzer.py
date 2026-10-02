@@ -43,7 +43,7 @@ class ProgressTracker:
         self.start_time = time.time()
         self.update_interval = update_interval
         self.last_update_time = 0
-        self.callbacks = []
+        self.callbacks: list[Any] = []
     
     def update(self, current: int, force: bool = False) -> None:
         """
@@ -186,7 +186,7 @@ class EfficientAnalyzer:
         self.profiler = Profiler(enabled=verbose)
         
         # Initialize statistics
-        self.stats = {
+        self.stats: Any = {
             "start_time": datetime.datetime.now()
         }
         

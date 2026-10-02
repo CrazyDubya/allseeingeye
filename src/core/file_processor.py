@@ -65,7 +65,7 @@ class FileProcessor:
             "mime_type": mime_type
         }
     
-    def format_size(self, size_bytes: int) -> str:
+    def format_size(self, size_bytes: float) -> str:
         """
         Format file size in human-readable format.
         
@@ -79,6 +79,7 @@ class FileProcessor:
             if size_bytes < 1024 or unit == 'GB':
                 return f"{size_bytes:.2f} {unit}"
             size_bytes /= 1024
+        return "0.00 B"
     
     def should_process_file(self, file_path: str, metadata: Dict[str, Any]) -> bool:
         """
