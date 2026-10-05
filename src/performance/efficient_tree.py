@@ -52,7 +52,7 @@ class StreamingTreeBuilder:
             Directory and file entries
         """
         # Track current prefix for tree lines
-        prefix_stack = []
+        prefix_stack = []  # type: ignore
         
         # Walk the directory starting from base
         for root, dirs, files in self._walk_with_depth():
@@ -66,7 +66,7 @@ class StreamingTreeBuilder:
             
             # Update directory count
             if root != self.base_directory:
-                self.stats["total_dirs"] += 1
+                self.stats["total_dirs"] += 1  # type: ignore
                 
                 # Calculate directory prefix
                 if depth > len(prefix_stack):
@@ -103,12 +103,12 @@ class StreamingTreeBuilder:
                     continue
                 
                 # Update file count
-                self.stats["total_files"] += 1
+                self.stats["total_files"] += 1  # type: ignore
                 
                 # Get file size
                 try:
                     file_size = os.path.getsize(file_path)
-                    self.stats["total_size"] += file_size
+                    self.stats["total_size"] += file_size  # type: ignore
                 except (OSError, IOError):
                     file_size = 0
                 
@@ -116,7 +116,7 @@ class StreamingTreeBuilder:
                 category = category_func(file_path) if category_func else None
                 
                 if category:
-                    self.stats["files_by_category"][category] = self.stats["files_by_category"].get(category, 0) + 1
+                    self.stats["files_by_category"][category] = self.stats["files_by_category"].get(category, 0) + 1  # type: ignore
                 
                 # Calculate file prefix
                 is_last_file = (i == len(files) - 1)

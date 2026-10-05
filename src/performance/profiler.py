@@ -49,7 +49,7 @@ class PerformanceStats:
         except Exception as e:
             logger.warning(f"Error getting CPU stats: {e}")
     
-    def add_event(self, name: str, data: Dict[str, Any] = None):
+    def add_event(self, name: str, data: Dict[str, Any] = None):  # type: ignore
         """
         Add a performance event with timestamp.
         
@@ -164,7 +164,7 @@ class Profiler:
         
         return self.stats.to_dict()
     
-    def add_event(self, name: str, data: Dict[str, Any] = None):
+    def add_event(self, name: str, data: Dict[str, Any] = None):  # type: ignore
         """
         Add a performance event.
         

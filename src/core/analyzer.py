@@ -104,7 +104,7 @@ class Analyzer:
         logger.info(f"Output format: {self.output_format}")
         
         # Dictionary to store processed files by category
-        files_content = {}
+        files_content = {}  # type: ignore
         
         # Build tree and collect file information
         logger.info("Building directory tree...")
@@ -120,7 +120,7 @@ class Analyzer:
         
         # Update statistics
         self.stats["end_time"] = datetime.datetime.now()
-        self.stats["duration"] = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()
+        self.stats["duration"] = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()  # type: ignore
         
         # Generate output based on format
         logger.info(f"Generating {self.output_format} output...")

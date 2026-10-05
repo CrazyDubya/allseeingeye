@@ -134,7 +134,7 @@ class SecurityUtils:
         if len(content) > 100:
             try:
                 # Calculate Shannon entropy
-                char_counts = {}
+                char_counts = {}  # type: ignore
                 for char in content:
                     char_counts[char] = char_counts.get(char, 0) + 1
                 

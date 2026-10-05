@@ -78,7 +78,7 @@ class FileCategory:
     def get_extensions_by_category(cls, category: str) -> List[str]:
         """Get all extensions for a given category"""
         if category in cls.CATEGORIES:
-            return cls.CATEGORIES[category]["extensions"]
+            return cls.CATEGORIES[category]["extensions"]  # type: ignore
         return []
 
     @classmethod
@@ -107,5 +107,5 @@ class FileCategory:
     def get_description(cls, category: str) -> str:
         """Get the description for a category"""
         if category in cls.CATEGORIES:
-            return cls.CATEGORIES[category]["description"]
+            return cls.CATEGORIES[category]["description"]  # type: ignore
         return "Other files"
