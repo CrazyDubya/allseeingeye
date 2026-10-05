@@ -656,8 +656,8 @@ class CodebaseStructure:
         <div class="controls">
             <label for="metric-select">Metric:</label>
             <select id="metric-select">
-                <option value="size" {'selected' if self.metric == 'size' else ''}>File Size</option>  # type: ignore
-                <option value="lines" {'selected' if self.metric == 'lines' else ''}>Line Count</option>  # type: ignore
+                <option value="size" {'selected' if self.metric == 'size' else ''}>File Size</option>
+                <option value="lines" {'selected' if self.metric == 'lines' else ''}>Line Count</option>
             </select>
             <label for="color-select">Color By:</label>
             <select id="color-select">
