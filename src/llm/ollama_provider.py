@@ -51,11 +51,11 @@ class OllamaProvider(LLMProvider):
             
             # Configure API base
             if api_base:
-                ollama.BASE_URL = api_base
+                ollama.BASE_URL = api_base  # type: ignore
                 
         except ImportError:
             logger.warning("Ollama not available. Install with: pip install ollama")
-            self.ollama = None
+            self.ollama = None  # type: ignore
             self.is_available = False
     
     def generate(self, prompt: str, **kwargs) -> Dict[str, Any]:

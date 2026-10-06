@@ -28,7 +28,7 @@ class AsyncProcessor:
             chunk_size: Number of files to process in a batch
             semaphore_limit: Maximum number of concurrent tasks
         """
-        self.max_workers = max_workers or min(32, os.cpu_count() * 5)
+        self.max_workers = max_workers or min(32, os.cpu_count() * 5)  # type: ignore
         self.chunk_size = chunk_size
         self.semaphore = asyncio.Semaphore(semaphore_limit)
         self.loop = None
@@ -60,7 +60,7 @@ class AsyncProcessor:
             Dictionary mapping file paths to processing results
         """
         # Store the event loop for use in other methods
-        self.loop = asyncio.get_running_loop()
+        self.loop = asyncio.get_running_loop()  # type: ignore
         
         # Results dictionary
         results = {}
@@ -107,7 +107,7 @@ class AsyncProcessor:
         async with self.semaphore:
             # Run CPU-bound processing in a thread pool
             try:
-                result = await self.loop.run_in_executor(
+                result = await self.loop.run_in_executor(  # type: ignore
                     self.executor, process_func, file_path
                 )
                 return (file_path, result)

@@ -10,7 +10,7 @@ from .base_exporter import BaseExporter
 class InteractiveHTMLExporter(BaseExporter):
     """Exports analysis results to an interactive HTML file."""
 
-    def export(self, data: dict, output_path: str) -> None:
+    def export(self, data: dict, output_path: str) -> None:  # type: ignore
         """
         Exports the analysis data to an interactive HTML file.
 

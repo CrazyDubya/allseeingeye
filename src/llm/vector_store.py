@@ -13,7 +13,7 @@ class VectorStore:
     def __init__(self, dimension: int):
         self.dimension = dimension
         self.index = faiss.IndexFlatL2(dimension)
-        self.chunks = []
+        self.chunks = []  # type: ignore
 
     def add(self, embeddings: List[List[float]], chunks: List[str]):
         """

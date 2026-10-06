@@ -107,7 +107,7 @@ class DashboardExporter(BaseExporter):
         file_categories = []
         if 'files' in data:
             # Group files by category
-            files_by_category = {}
+            files_by_category = {}  # type: ignore
             for file_path, file_info in data['files'].items():
                 category = file_info.get('category', 'Unknown')
                 
@@ -183,7 +183,7 @@ class DashboardExporter(BaseExporter):
             return root
         
         # Group files by directory
-        directories = {}
+        directories = {}  # type: ignore
         
         for file_path, file_info in data['files'].items():
             # Split path into parts

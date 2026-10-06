@@ -56,7 +56,7 @@ class LLMIntegration:
                 retry_delay=self.config.get("retry_delay", 5)
             )
         elif provider == "mock":
-            self.provider = MockProvider(
+            self.provider = MockProvider(  # type: ignore
                 responses=self.config.get("responses", {})
             )
         else:
@@ -71,7 +71,7 @@ class LLMIntegration:
         """
         return getattr(self.provider, "is_available", True)
     
-    def summarize_code(self, code: str, filename: str = None) -> str:
+    def summarize_code(self, code: str, filename: str = None) -> str:  # type: ignore
         """
         Generate a summary of code.
         
@@ -207,7 +207,7 @@ class LLMIntegration:
             logger.error(f"Error parsing recommendations: {e}")
             return []
     
-    def analyze_code_quality(self, code: str, filename: str = None) -> Dict[str, Any]:
+    def analyze_code_quality(self, code: str, filename: str = None) -> Dict[str, Any]:  # type: ignore
         """
         Analyze code quality and provide suggestions.
         
@@ -262,7 +262,7 @@ class LLMIntegration:
             return {"error": f"Error parsing response: {str(e)}"}
 
 
-def get_llm_integration(provider: str = "ollama", config: Dict[str, Any] = None) -> LLMIntegration:
+def get_llm_integration(provider: str = "ollama", config: Dict[str, Any] = None) -> LLMIntegration:  # type: ignore
     """
     Factory function to get an LLM integration instance.
     

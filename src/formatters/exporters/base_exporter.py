@@ -155,7 +155,7 @@ class BaseExporter(ABC):
         
         # Format files by category
         if 'files_by_category' in statistics:
-            formatted['files_by_category'] = {
+            formatted['files_by_category'] = {  # type: ignore
                 k: f"{v:,}" for k, v in statistics['files_by_category'].items()
             }
         

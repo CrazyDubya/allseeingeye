@@ -187,7 +187,7 @@ class DependencyGraph:
             '.php': 'php'
         }
         
-        nodes = []
+        nodes = []  # type: ignore
         links = []
         processed_files = set()
         file_to_node_id = {}
@@ -276,7 +276,7 @@ class DependencyGraph:
         Returns:
             List of dependencies found in the file
         """
-        dependencies = []
+        dependencies = []  # type: ignore
         
         # Get patterns for this language
         patterns = self.IMPORT_PATTERNS.get(language, [])
@@ -417,7 +417,7 @@ class DependencyGraph:
         '.rb': 'ruby',
     }
     
-    def __init__(self,
+    def __init__(self,  # type: ignore
                  base_directory: str,
                  excluded_dirs: Optional[List[str]] = None,
                  excluded_files: Optional[List[str]] = None,

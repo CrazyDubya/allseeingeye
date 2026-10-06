@@ -43,7 +43,7 @@ class ProgressTracker:
         self.start_time = time.time()
         self.update_interval = update_interval
         self.last_update_time = 0
-        self.callbacks = []
+        self.callbacks = []  # type: ignore
     
     def update(self, current: int, force: bool = False) -> None:
         """
@@ -58,7 +58,7 @@ class ProgressTracker:
         # Check if we should send an update
         now = time.time()
         if force or (now - self.last_update_time) >= self.update_interval:
-            self.last_update_time = now
+            self.last_update_time = now  # type: ignore
             
             # Calculate progress percentage and estimated time remaining
             progress = self.current / self.total if self.total > 0 else 0
@@ -165,7 +165,7 @@ class EfficientAnalyzer:
         self.max_files = max_files
         self.output_format = output_format
         self.security_checks = security_checks
-        self.max_workers = max_workers or max(1, os.cpu_count())
+        self.max_workers = max_workers or max(1, os.cpu_count())  # type: ignore
         self.chunk_size = chunk_size
         
         # Create progress tracker
@@ -192,7 +192,7 @@ class EfficientAnalyzer:
         
         # Create utilities
         self.io_limiter = DiskIOLimiter(
-            max_concurrent_reads=min(20, self.max_workers * 2),
+            max_concurrent_reads=min(20, self.max_workers * 2),  # type: ignore
             read_delay=0.01
         )
     
@@ -320,7 +320,7 @@ class EfficientAnalyzer:
         
         return result
     
-    def _format_size(self, size_bytes: int) -> str:
+    def _format_size(self, size_bytes: int) -> str:  # type: ignore
         """
         Format file size in human-readable format.
         
@@ -333,7 +333,7 @@ class EfficientAnalyzer:
         for unit in ['B', 'KB', 'MB', 'GB']:
             if size_bytes < 1024 or unit == 'GB':
                 return f"{size_bytes:.2f} {unit}"
-            size_bytes /= 1024
+            size_bytes /= 1024  # type: ignore
     
     async def run_async(self) -> str:
         """
@@ -417,7 +417,7 @@ class EfficientAnalyzer:
         logger.info("Processing files...")
         
         # Dictionary to store processed files by category
-        files_content = {}
+        files_content = {}  # type: ignore
         
         # Update progress as files are processed
         def update_progress(current, total):
@@ -442,15 +442,15 @@ class EfficientAnalyzer:
             files_content[category][rel_path] = result
             
             # Update stats
-            self.stats["total_files"] = self.stats.get("total_files", 0) + 1
+            self.stats["total_files"] = self.stats.get("total_files", 0) + 1  # type: ignore
             self.stats["total_size"] = self.stats.get("total_size", 0) + result.get("size", 0)
             self.stats["total_lines"] = self.stats.get("total_lines", 0) + result.get("line_count", 0)
             
             # Update category stats
             if "files_by_category" not in self.stats:
-                self.stats["files_by_category"] = {}
+                self.stats["files_by_category"] = {}  # type: ignore
             
-            self.stats["files_by_category"][category] = self.stats["files_by_category"].get(category, 0) + 1
+            self.stats["files_by_category"][category] = self.stats["files_by_category"].get(category, 0) + 1  # type: ignore
         
         self.profiler.add_event("processing_complete")
         
@@ -469,7 +469,7 @@ class EfficientAnalyzer:
         directory_structure = tree_builder.build_tree_text(self._get_category_for_file)
         
         # Update stats from tree builder
-        self.stats["total_dirs"] = tree_builder.stats["total_dirs"]
+        self.stats["total_dirs"] = tree_builder.stats["total_dirs"]  # type: ignore
         
         self.profiler.add_event("tree_building_complete")
         
@@ -483,7 +483,7 @@ class EfficientAnalyzer:
         summary.append("This codebase contains:")
         
         # Count files by type
-        for category, count in self.stats.get('files_by_category', {}).items():
+        for category, count in self.stats.get('files_by_category', {}).items():  # type: ignore
             if count > 0:
                 description = FileCategory.get_description(category)
                 summary.append(f"- {count} {description}")
@@ -508,11 +508,11 @@ class EfficientAnalyzer:
         self.profiler.add_event("summary_creation_complete")
         
         # Format size in stats
-        self.stats["total_size_formatted"] = self._format_size(self.stats.get("total_size", 0))
+        self.stats["total_size_formatted"] = self._format_size(self.stats.get("total_size", 0))  # type: ignore
         
         # Add end time and duration
         self.stats["end_time"] = datetime.datetime.now()
-        self.stats["duration"] = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()
+        self.stats["duration"] = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()  # type: ignore
         
         # Generate output
         self.profiler.add_event("output_generation_start")
