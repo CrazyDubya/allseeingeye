@@ -32,9 +32,9 @@ class SecurityUtils:
         if not path:
             return False, "Path cannot be empty"
         
-        # Normalize path
+        # Normalize path and resolve symlinks
         try:
-            normalized_path = os.path.normpath(os.path.abspath(path))
+            normalized_path = os.path.normpath(os.path.realpath(path))
         except Exception as e:
             return False, f"Invalid path: {e}"
         
@@ -44,7 +44,7 @@ class SecurityUtils:
         
         # If base directory is specified, ensure path is within it
         if base_dir:
-            base_dir = os.path.normpath(os.path.abspath(base_dir))
+            base_dir = os.path.normpath(os.path.realpath(base_dir))
             try:
                 if os.path.commonpath([base_dir, normalized_path]) != base_dir:
                     return False, f"Path {normalized_path} is outside the base directory {base_dir}"
@@ -275,9 +275,9 @@ class SecurityUtils:
             r'system\s*\(',
             r'exec\s*\(',
             r'eval\s*\(',
-            r'os\.system',
-            r'subprocess\.call',
-            r'subprocess\.Popen',
+            r'os\s*\.\s*system',
+            r'subprocess\s*\.\s*call',
+            r'subprocess\s*\.\s*Popen',
             # Additional dangerous patterns
             r'__import__\s*\(',
             r'globals\s*\(\)',
@@ -287,12 +287,12 @@ class SecurityUtils:
             r'\beval\b',
             r'\bexec\b',
             r'\bcompile\b',
-            r'base64\.b64decode',
-            r'pickle\.loads',
-            r'marshal\.loads',
-            r'codecs\.escape_decode',
-            r'\bchr\(', 
-            r'\bord\(',
+            r'base64\s*\.\s*b64decode',
+            r'pickle\s*\.\s*loads',
+            r'marshal\s*\.\s*loads',
+            r'codecs\s*\.\s*escape_decode',
+            r'\bchr\s*\(',
+            r'\bord\s*\(',
             # Potential SQL injection
             r'DROP\s+TABLE',
             r'DELETE\s+FROM',
@@ -301,9 +301,9 @@ class SecurityUtils:
             # Potential file system access
             r'open\s*\(',
             r'file\s*\(',
-            r'os\.unlink',
-            r'os\.remove',
-            r'shutil\.rmtree',
+            r'os\s*\.\s*unlink',
+            r'os\s*\.\s*remove',
+            r'shutil\s*\.\s*rmtree',
             # Potential hidden scripts
             r'<script[\s\S]*?>[\s\S]*?</script>',
             r'javascript:',
