@@ -26,6 +26,17 @@ def test_validate_path_traversal(tmp_path):
     assert is_valid is False
     assert "is outside the base directory" in err
 
+    # Path with symlink traversal should fail
+    symlink_path = base_dir / "symlink_to_sibling"
+    try:
+        os.symlink(str(sibling_dir), str(symlink_path))
+        is_valid, err = SecurityUtils.validate_path(str(symlink_path / "test.txt"), str(base_dir))
+        assert is_valid is False
+        assert "is outside the base directory" in err
+    except OSError:
+        # Skip if running in environment where symlink creation is not permitted
+        pass
+
 def test_is_safe_file_content_malicious_patterns():
     """Test that is_safe_file_content correctly detects and rejects malicious patterns."""
     # Safe text
@@ -40,6 +51,16 @@ def test_is_safe_file_content_malicious_patterns():
 
     # Malicious os.system pattern
     is_safe, msg = SecurityUtils.is_safe_file_content("import os; os.system('rm -rf /')")
+    assert is_safe is False
+    assert "Found potentially unsafe pattern" in msg
+
+    # Malicious os.system pattern with bypass (spaces)
+    is_safe, msg = SecurityUtils.is_safe_file_content("import os; os . system('rm -rf /')")
+    assert is_safe is False
+    assert "Found potentially unsafe pattern" in msg
+
+    # Malicious subprocess pattern with bypass (spaces)
+    is_safe, msg = SecurityUtils.is_safe_file_content("import subprocess; subprocess . Popen(['ls'])")
     assert is_safe is False
     assert "Found potentially unsafe pattern" in msg
 
