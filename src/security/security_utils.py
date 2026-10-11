@@ -34,7 +34,7 @@ class SecurityUtils:
         
         # Normalize path
         try:
-            normalized_path = os.path.normpath(os.path.abspath(path))
+            normalized_path = os.path.normpath(os.path.realpath(path))
         except Exception as e:
             return False, f"Invalid path: {e}"
         
@@ -44,7 +44,7 @@ class SecurityUtils:
         
         # If base directory is specified, ensure path is within it
         if base_dir:
-            base_dir = os.path.normpath(os.path.abspath(base_dir))
+            base_dir = os.path.normpath(os.path.realpath(base_dir))
             try:
                 if os.path.commonpath([base_dir, normalized_path]) != base_dir:
                     return False, f"Path {normalized_path} is outside the base directory {base_dir}"
@@ -327,7 +327,7 @@ class SecurityUtils:
         
         # Search for malicious patterns
         for pattern in malicious_patterns:
-            match = re.search(pattern, content, re.IGNORECASE)
+            match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
             if match:
                 # This is a simple check - in a real system, you'd want more context
                 # and possibly a whitelist approach for trusted patterns
