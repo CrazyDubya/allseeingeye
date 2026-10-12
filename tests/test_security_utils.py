@@ -37,6 +37,18 @@ def test_validate_path_traversal(tmp_path):
         # Skip if running in environment where symlink creation is not permitted
         pass
 
+def test_validate_path_symlink_traversal(tmp_path):
+    """Test that validate_path rejects a symlinked file that resolves outside base_dir."""
+    base_dir = tmp_path / "app" / "base"
+    base_dir.mkdir(parents=True, exist_ok=True)
+    sensitive_file = tmp_path / "sensitive.txt"
+    sensitive_file.write_text("secret")
+    symlink_file = base_dir / "link.txt"
+    os.symlink(str(sensitive_file), str(symlink_file))
+    is_valid, err = SecurityUtils.validate_path(str(symlink_file), str(base_dir))
+    assert is_valid is False
+    assert "is outside the base directory" in err
+
 def test_is_safe_file_content_malicious_patterns():
     """Test that is_safe_file_content correctly detects and rejects malicious patterns."""
     # Safe text
@@ -61,6 +73,16 @@ def test_is_safe_file_content_malicious_patterns():
 
     # Malicious subprocess pattern with bypass (spaces)
     is_safe, msg = SecurityUtils.is_safe_file_content("import subprocess; subprocess . Popen(['ls'])")
+    assert is_safe is False
+    assert "Found potentially unsafe pattern" in msg
+
+    # Multiline evasion pattern (shell commands)
+    is_safe, msg = SecurityUtils.is_safe_file_content("`\nrm -rf /\n`")
+    assert is_safe is False
+    assert "Found potentially unsafe pattern" in msg
+
+    # Multiline evasion pattern (script tags)
+    is_safe, msg = SecurityUtils.is_safe_file_content("<script>\nalert(1);\n</script>")
     assert is_safe is False
     assert "Found potentially unsafe pattern" in msg
 

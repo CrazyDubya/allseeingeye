@@ -327,7 +327,7 @@ class SecurityUtils:
         
         # Search for malicious patterns
         for pattern in malicious_patterns:
-            match = re.search(pattern, content, re.IGNORECASE)
+            match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
             if match:
                 # This is a simple check - in a real system, you'd want more context
                 # and possibly a whitelist approach for trusted patterns
