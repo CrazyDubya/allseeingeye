@@ -6,11 +6,22 @@ Batch processing utilities for AllSeeingEye
 import os
 import time
 import logging
+import functools
 import multiprocessing
 from typing import Dict, Any, List, Set, Optional, Callable, Generator, Tuple
 
 # Configure logging
 logger = logging.getLogger("BatchProcessor")
+
+
+def _safe_process(process_func: Callable[[str], Dict[str, Any]],
+                  file_path: str) -> Tuple[str, Dict[str, Any]]:
+    """Run process_func on file_path, returning an error result on exception."""
+    try:
+        return (file_path, process_func(file_path))
+    except Exception as e:
+        logger.error(f"Error processing file {file_path}: {e}")
+        return (file_path, {"error": str(e)})
 
 
 class BatchProcessor:
@@ -100,13 +111,8 @@ class BatchProcessor:
         
         # Process in parallel using a process pool
         with multiprocessing.Pool(self.max_workers) as pool:
-            # Wrap the process function to handle exceptions
-            def safe_process(file_path):
-                try:
-                    return (file_path, process_func(file_path))
-                except Exception as e:
-                    logger.error(f"Error processing file {file_path}: {e}")
-                    return (file_path, {"error": str(e)})
+            # Module-level wrapper (picklable) that captures exceptions per file
+            safe_process = functools.partial(_safe_process, process_func)
             
             # Process files in parallel
             for file_path, result in pool.imap_unordered(safe_process, files):
@@ -195,17 +201,12 @@ class StreamingBatchProcessor:
         
         # Process in parallel using a process pool
         with multiprocessing.Pool(self.max_workers) as pool:
-            # Wrap the process function to handle exceptions
-            def safe_process(file_path):
-                try:
-                    return (file_path, process_func(file_path))
-                except Exception as e:
-                    logger.error(f"Error processing file {file_path}: {e}")
-                    return (file_path, {"error": str(e)})
+            # Module-level wrapper (picklable) that captures exceptions per file
+            safe_process = functools.partial(_safe_process, process_func)
             
             # Process files in parallel and yield results as they become available
-            for result in pool.imap_unordered(safe_process, files):
-                yield result
+            for file_path, result in pool.imap_unordered(safe_process, files):
+                yield (file_path, result)
 
 
 class FileTypeDispatcher:
