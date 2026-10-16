@@ -166,7 +166,7 @@ def create_app():
     # Define API routes
     
     @app.get("/")
-    async def root():
+    async def root() -> Dict[str, str]:
         """Root endpoint"""
         return {
             "name": "AllSeeingEye API",
@@ -178,7 +178,7 @@ def create_app():
     async def analyze_directory(
         request: AnalysisRequest,
         background_tasks: BackgroundTasks
-    ):
+    ) -> Dict[str, Any]:
         """
         Analyze a directory with AllSeeingEye
         """
@@ -233,7 +233,7 @@ def create_app():
         llm_model: Optional[str] = Form(None),
         max_workers: int = Form(4),
         chunk_size: int = Form(100)
-    ):
+    ) -> Dict[str, Any]:
         """
         Analyze an uploaded ZIP file with AllSeeingEye
         """
@@ -299,7 +299,7 @@ def create_app():
         }
     
     @app.get("/analyze/{task_id}/status", response_model=TaskStatus)
-    async def get_task_status(task_id: str):
+    async def get_task_status(task_id: str) -> Dict[str, Any]:
         """
         Get the status of an analysis task
         """
@@ -314,7 +314,7 @@ def create_app():
         }
     
     @app.get("/analyze/{task_id}/result", response_model=AnalysisResult)
-    async def get_task_result(task_id: str):
+    async def get_task_result(task_id: str) -> Dict[str, Any]:
         """
         Get the result of an analysis task
         """
@@ -332,7 +332,7 @@ def create_app():
         }
     
     @app.get("/analyze/{task_id}/download")
-    async def download_result(task_id: str):
+    async def download_result(task_id: str) -> FileResponse:
         """
         Download the output file of an analysis task
         """
@@ -352,7 +352,7 @@ def create_app():
         )
     
     @app.delete("/analyze/{task_id}")
-    async def delete_task(task_id: str):
+    async def delete_task(task_id: str) -> Dict[str, str]:
         """
         Delete an analysis task and its resources
         """
@@ -376,7 +376,7 @@ def create_app():
         }
     
     @app.post("/llm/generate", response_model=LLMResponse)
-    async def generate_llm_response(request: LLMRequest):
+    async def generate_llm_response(request: LLMRequest) -> Dict[str, str]:
         """
         Generate a response from an LLM
         """
@@ -414,7 +414,7 @@ def create_app():
             raise HTTPException(status_code=500, detail=str(e))
     
     @app.post("/webhooks/register")
-    async def register_webhook(config: WebhookConfig, request: Request):
+    async def register_webhook(config: WebhookConfig, request: Request) -> Dict[str, str]:
         """
         Register a webhook for event notifications
         """
@@ -452,7 +452,7 @@ def create_app():
         }
     
     @app.delete("/webhooks/{webhook_id}")
-    async def delete_webhook(webhook_id: str):
+    async def delete_webhook(webhook_id: str) -> Dict[str, str]:
         """
         Delete a registered webhook
         """
@@ -474,7 +474,7 @@ def create_app():
     async def generate_dependency_graph(
         request: VisualizationRequest,
         background_tasks: BackgroundTasks
-    ):
+    ) -> Dict[str, Any]:
         """
         Generate a dependency graph visualization for a directory
         """
@@ -521,7 +521,7 @@ def create_app():
     async def generate_treemap(
         request: VisualizationRequest,
         background_tasks: BackgroundTasks
-    ):
+    ) -> Dict[str, Any]:
         """
         Generate a codebase structure treemap visualization for a directory
         """
@@ -569,7 +569,7 @@ def create_app():
     async def generate_metrics_dashboard(
         request: VisualizationRequest,
         background_tasks: BackgroundTasks
-    ):
+    ) -> Dict[str, Any]:
         """
         Generate a metrics dashboard visualization for a directory
         """
@@ -613,7 +613,7 @@ def create_app():
         }
     
     @app.get("/visualize/{task_id}/view")
-    async def view_visualization(task_id: str):
+    async def view_visualization(task_id: str) -> HTMLResponse:
         """
         View a generated visualization directly
         """
@@ -639,7 +639,7 @@ def create_app():
     async def analyze_code_similarity(
         request: SimilarityRequest,
         background_tasks: BackgroundTasks
-    ):
+    ) -> Dict[str, Any]:
         """
         Analyze code similarity in a directory
         """
