@@ -72,7 +72,7 @@ class OutputFormat:
             "directory_structure": directory_structure,
             "files_content": files_content
         }
-        return json.dumps(output, indent=2)
+        return json.dumps(output, indent=2, default=str)
 
     @staticmethod
     def format_text(directory_structure: str, files_content: Dict[str, Dict],
