@@ -34,7 +34,6 @@
 
 ### Type Annotations
 1. Improve type hints in security module
-2. Make API return type hints consistent
 
 ## High Priority
 
