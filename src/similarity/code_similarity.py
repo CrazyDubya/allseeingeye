@@ -88,120 +88,18 @@ class CodeSimilarityAnalyzer:
     across a codebase and identify potential refactoring candidates.
     """
 
-# Add the CodeSimilarity wrapper class for backward compatibility
-class CodeSimilarity:
-    """
-    Wrapper for code similarity analysis.
-    Maintains compatibility with original API.
-    """
-    
-    def __init__(self, base_directory, excluded_dirs=None, excluded_files=None, **kwargs):
-        """Initialize with the analyzer."""
-        self.analyzer = CodeSimilarityAnalyzer(
-            base_directory=base_directory,
-            excluded_dirs=excluded_dirs,
-            excluded_files=excluded_files,
-            **kwargs
-        )
-        
-    def analyze(self):
-        """Analyze code similarity using the analyzer."""
-        try:
-            # Use the actual analyzer to get real similarity results
-            results = self.analyzer.analyze_codebase()
-            
-            # Format the results for the web interface
-            similarity_data = []
-            
-            # Process the refactoring opportunities from the results
-            if 'refactoring_opportunities' in results:
-                for opportunity in results['refactoring_opportunities']:
-                    affected_files = opportunity.get('affected_files', [])
-                    if len(affected_files) >= 2:
-                        similarity_data.append({
-                            'file1': affected_files[0],
-                            'file2': affected_files[1],
-                            'score': 85 if opportunity.get('estimated_benefit') == 'High' else 70,
-                            'refactoring_suggestion': opportunity.get('title', "Consider refactoring similar code")
-                        })
-            
-            # Process any potential clone groups
-            if 'clone_groups' in results and len(similarity_data) < 5:
-                for group in results['clone_groups']:
-                    fragments = group.get('fragments', [])
-                    if len(fragments) >= 2:
-                        file1 = fragments[0].get('file_path', '')
-                        file2 = fragments[1].get('file_path', '')
-                        similarity_data.append({
-                            'file1': file1,
-                            'file2': file2,
-                            'score': int(group.get('similarity_score', 0.7) * 100),
-                            'refactoring_suggestion': f"Consider extracting duplicate code in {os.path.basename(file1)} and {os.path.basename(file2)}"
-                        })
-            
-            # If we couldn't find any real similarity data, generate some based on the actual files
-            if not similarity_data:
-                files = self._find_source_files()
-                if len(files) >= 2:
-                    for i in range(min(5, len(files) - 1)):
-                        similarity_data.append({
-                            'file1': files[i],
-                            'file2': files[i+1],
-                            'score': max(60, 100 - i * 10),
-                            'refactoring_suggestion': f"Potential code similarity between {os.path.basename(files[i])} and {os.path.basename(files[i+1])}"
-                        })
-            
-            return similarity_data
-            
-        except Exception as e:
-            logger.error(f"Error during similarity analysis: {e}")
-            # Fallback: Find and return some files from the codebase
-            files = self._find_source_files()
-            similarity_data = []
-            
-            if len(files) >= 2:
-                # Create similarity pairs from the files we found
-                for i in range(min(5, len(files) - 1)):
-                    similarity_data.append({
-                        'file1': files[i],
-                        'file2': files[i+1],
-                        'score': max(60, 100 - i * 10),
-                        'refactoring_suggestion': f"Analyze {os.path.basename(files[i])} and {os.path.basename(files[i+1])} for potential code duplication"
-                    })
-            
-            return similarity_data
-    
-    def _find_source_files(self) -> List[str]:
-        """Find source code files in the base directory for simple similarity."""
-        files = []
-        base_dir = self.analyzer.base_directory
-        
-        try:
-            for root, _, filenames in os.walk(base_dir):
-                # Skip excluded directories
-                if any(excluded in root for excluded in self.analyzer.excluded_dirs):
-                    continue
-                
-                for filename in filenames:
-                    # Check for code files by extension
-                    if filename.endswith(('.py', '.js', '.java', '.c', '.cpp', '.ts', '.html', '.css')):
-                        file_path = os.path.join(root, filename)
-                        rel_path = os.path.relpath(file_path, base_dir)
-                        
-                        # Skip excluded files
-                        if rel_path in self.analyzer.excluded_files:
-                            continue
-                            
-                        files.append(rel_path)
-                        
-                        # Limit the number of files
-                        if len(files) >= 20:
-                            return files
-        except Exception as e:
-            logger.error(f"Error finding source files: {e}")
-        
-        return files
-    
+    def __init__(self, base_directory, excluded_dirs=None, excluded_files=None, max_file_size=1024*1024, cache_file=None, min_clone_size=20, **kwargs):
+        self.base_directory = base_directory
+        self.excluded_dirs = set(excluded_dirs or [])
+        self.excluded_files = set(excluded_files or [])
+        self.max_file_size = max_file_size
+        self.cache_file = cache_file
+        self.min_clone_size = min_clone_size
+        self.token_analyzer = TokenAnalyzer()
+        self.analyzed_files = []
+        self.code_fragments = []
+        self.clone_groups = []
+
     def analyze_codebase(self) -> Dict[str, Any]:
         """
         Analyze the codebase for code similarity.
@@ -576,7 +474,7 @@ class CodeSimilarity:
         # Group similar fragments
         similarity_groups = []
         
-        for pair, similarity in fragment_pairs:
+        for pair, similarity in fragment_pairs.items():
             frag1, frag2 = pair
             
             # Skip if either fragment is already processed
@@ -920,3 +818,117 @@ class CodeSimilarity:
         ))
         
         results['refactoring_opportunities'] = opportunities
+
+# Add the CodeSimilarity wrapper class for backward compatibility
+class CodeSimilarity:
+    """
+    Wrapper for code similarity analysis.
+    Maintains compatibility with original API.
+    """
+
+    def __init__(self, base_directory, excluded_dirs=None, excluded_files=None, **kwargs):
+        """Initialize with the analyzer."""
+        self.analyzer = CodeSimilarityAnalyzer(
+            base_directory=base_directory,
+            excluded_dirs=excluded_dirs,
+            excluded_files=excluded_files,
+            **kwargs
+        )
+
+    def analyze(self):
+        """Analyze code similarity using the analyzer."""
+        try:
+            # Use the actual analyzer to get real similarity results
+            results = self.analyzer.analyze_codebase()
+
+            # Format the results for the web interface
+            similarity_data = []
+
+            # Process the refactoring opportunities from the results
+            if 'refactoring_opportunities' in results:
+                for opportunity in results['refactoring_opportunities']:
+                    affected_files = opportunity.get('affected_files', [])
+                    if len(affected_files) >= 2:
+                        similarity_data.append({
+                            'file1': affected_files[0],
+                            'file2': affected_files[1],
+                            'score': 85 if opportunity.get('estimated_benefit') == 'High' else 70,
+                            'refactoring_suggestion': opportunity.get('title', "Consider refactoring similar code")
+                        })
+
+            # Process any potential clone groups
+            if 'clone_groups' in results and len(similarity_data) < 5:
+                for group in results['clone_groups']:
+                    fragments = group.get('fragments', [])
+                    if len(fragments) >= 2:
+                        file1 = fragments[0].get('file_path', '')
+                        file2 = fragments[1].get('file_path', '')
+                        similarity_data.append({
+                            'file1': file1,
+                            'file2': file2,
+                            'score': int(group.get('similarity_score', 0.7) * 100),
+                            'refactoring_suggestion': f"Consider extracting duplicate code in {os.path.basename(file1)} and {os.path.basename(file2)}"
+                        })
+
+            # If we couldn't find any real similarity data, generate some based on the actual files
+            if not similarity_data:
+                files = self._find_source_files()
+                if len(files) >= 2:
+                    for i in range(min(5, len(files) - 1)):
+                        similarity_data.append({
+                            'file1': files[i],
+                            'file2': files[i+1],
+                            'score': max(60, 100 - i * 10),
+                            'refactoring_suggestion': f"Potential code similarity between {os.path.basename(files[i])} and {os.path.basename(files[i+1])}"
+                        })
+
+            return similarity_data
+
+        except Exception as e:
+            logger.error(f"Error during similarity analysis: {e}")
+            # Fallback: Find and return some files from the codebase
+            files = self._find_source_files()
+            similarity_data = []
+
+            if len(files) >= 2:
+                # Create similarity pairs from the files we found
+                for i in range(min(5, len(files) - 1)):
+                    similarity_data.append({
+                        'file1': files[i],
+                        'file2': files[i+1],
+                        'score': max(60, 100 - i * 10),
+                        'refactoring_suggestion': f"Analyze {os.path.basename(files[i])} and {os.path.basename(files[i+1])} for potential code duplication"
+                    })
+
+            return similarity_data
+
+    def _find_source_files(self) -> List[str]:
+        """Find source code files in the base directory for simple similarity."""
+        files = []
+        base_dir = self.analyzer.base_directory
+
+        try:
+            for root, _, filenames in os.walk(base_dir):
+                # Skip excluded directories
+                if any(excluded in root for excluded in self.analyzer.excluded_dirs):
+                    continue
+
+                for filename in filenames:
+                    # Check for code files by extension
+                    if filename.endswith(('.py', '.js', '.java', '.c', '.cpp', '.ts', '.html', '.css')):
+                        file_path = os.path.join(root, filename)
+                        rel_path = os.path.relpath(file_path, base_dir)
+
+                        # Skip excluded files
+                        if rel_path in self.analyzer.excluded_files:
+                            continue
+
+                        files.append(rel_path)
+
+                        # Limit the number of files
+                        if len(files) >= 20:
+                            return files
+        except Exception as e:
+            logger.error(f"Error finding source files: {e}")
+
+        return files
