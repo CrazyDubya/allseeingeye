@@ -50,20 +50,27 @@ class FileProcessor:
             
         Returns:
             Dictionary with file metadata
+
+        Raises:
+            OSError: If the file cannot be accessed (e.g., does not exist)
         """
-        file_stat = os.stat(file_path)
-        size = file_stat.st_size
-        modified_time = datetime.datetime.fromtimestamp(file_stat.st_mtime)
-        
-        # Determine mime type
-        mime_type, _ = mimetypes.guess_type(file_path)
-        
-        return {
-            "size": size,
-            "size_formatted": self.format_size(size),
-            "last_modified": modified_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "mime_type": mime_type
-        }
+        try:
+            file_stat = os.stat(file_path)
+            size = file_stat.st_size
+            modified_time = datetime.datetime.fromtimestamp(file_stat.st_mtime)
+
+            # Determine mime type
+            mime_type, _ = mimetypes.guess_type(file_path)
+
+            return {
+                "size": size,
+                "size_formatted": self.format_size(size),
+                "last_modified": modified_time.strftime("%Y-%m-%d %H:%M:%S"),
+                "mime_type": mime_type
+            }
+        except OSError as e:
+            logger.error(f"Could not access file {file_path}: {e}")
+            raise
     
     def format_size(self, size_bytes: int) -> str:
         """
