@@ -40,7 +40,7 @@ class TreeBuilder:
         self.max_files = max_files
         
         # Initialize statistics
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             "total_files": 0,
             "total_dirs": 0,
             "total_size": 0,
