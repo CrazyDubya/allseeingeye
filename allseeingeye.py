@@ -401,21 +401,28 @@ class AllSeeingEye:
         tree_output = []
 
         def _build_tree_recursive(dir_path: str, prefix: str = ''):
-            entries = sorted(os.listdir(dir_path))
-            dirs = [e for e in entries if os.path.isdir(os.path.join(dir_path, e))]
-            files = [e for e in entries if os.path.isfile(os.path.join(dir_path, e))]
+            try:
+                with os.scandir(dir_path) as it:
+                    entries = list(it)
+            except (PermissionError, FileNotFoundError):
+                tree_output.append(f"{prefix}    [Permission Denied]")
+                return True
+
+            entries.sort(key=lambda e: e.name)
+            dirs = [e for e in entries if e.is_dir()]
+            files = [e for e in entries if e.is_file()]
 
             # Process all files first
             for i, entry in enumerate(files):
                 is_last = (i == len(files) - 1 and len(dirs) == 0)
                 conn = '└── ' if is_last else '├── '
 
-                file_path = os.path.join(dir_path, entry)
+                file_path = entry.path
                 rel_path = os.path.relpath(file_path, self.directory)
 
                 # Skip excluded files
                 if rel_path in self.excluded_files:
-                    tree_output.append(f"{prefix}{conn}{entry} # Excluded")
+                    tree_output.append(f"{prefix}{conn}{entry.name} # Excluded")
                     continue
 
                 # Process file
@@ -426,8 +433,16 @@ class AllSeeingEye:
                 category = self.get_file_category(file_path)
                 self.stats["files_by_category"][category] = self.stats["files_by_category"].get(category, 0) + 1
 
+                # Track extensions for languages
+                _, ext = os.path.splitext(entry.name)
+                ext = ext.lower()
+                if ext:
+                    if "files_by_extension" not in self.stats:
+                        self.stats["files_by_extension"] = {}
+                    self.stats["files_by_extension"][ext] = self.stats["files_by_extension"].get(ext, 0) + 1
+
                 # Add to tree
-                tree_output.append(f"{prefix}{conn}{entry}")
+                tree_output.append(f"{prefix}{conn}{entry.name}")
 
                 # Check if we've hit the file limit
                 if self.stats["total_files"] >= self.max_files:
@@ -440,16 +455,16 @@ class AllSeeingEye:
                 conn = '└── ' if is_last else '├── '
                 new_prefix = prefix + ('    ' if is_last else '│   ')
 
-                dir_path_full = os.path.join(dir_path, entry)
+                dir_path_full = entry.path
                 rel_dir_path = os.path.relpath(dir_path_full, self.directory)
 
                 # Skip excluded directories
-                if entry in self.excluded_dirs or rel_dir_path in self.excluded_dirs:
-                    tree_output.append(f"{prefix}{conn}{entry}/ # Excluded")
+                if entry.name in self.excluded_dirs or rel_dir_path in self.excluded_dirs:
+                    tree_output.append(f"{prefix}{conn}{entry.name}/ # Excluded")
                     continue
 
                 # Add directory to tree
-                tree_output.append(f"{prefix}{conn}{entry}/")
+                tree_output.append(f"{prefix}{conn}{entry.name}/")
                 self.stats["total_dirs"] += 1
 
                 # Recursively process subdirectories
@@ -492,6 +507,45 @@ class AllSeeingEye:
                 dir_path = os.path.join(self.directory, directory)
                 file_count = sum(len(files) for _, _, files in os.walk(dir_path))
                 summary.append(f"- {directory}/: {file_count} files")
+
+        # Add language stats if available
+        languages = self.stats.get('files_by_extension', {})
+
+        if languages:
+            summary.append("\nProgramming languages:")
+            language_map = {
+                ".py": "Python",
+                ".js": "JavaScript",
+                ".jsx": "React JSX",
+                ".ts": "TypeScript",
+                ".tsx": "React TSX",
+                ".html": "HTML",
+                ".css": "CSS",
+                ".java": "Java",
+                ".c": "C",
+                ".cpp": "C++",
+                ".cs": "C#",
+                ".go": "Go",
+                ".rb": "Ruby",
+                ".php": "PHP",
+                ".swift": "Swift",
+                ".kt": "Kotlin",
+                ".rs": "Rust",
+                ".sh": "Shell",
+                ".json": "JSON",
+                ".md": "Markdown",
+                ".yml": "YAML",
+                ".yaml": "YAML",
+                ".toml": "TOML",
+                ".xml": "XML",
+                ".sql": "SQL"
+            }
+
+            # Get top 5 languages
+            top_languages = sorted(languages.items(), key=lambda x: x[1], reverse=True)[:5]
+            for ext, count in top_languages:
+                lang_name = language_map.get(ext, ext)
+                summary.append(f"- {lang_name}: {count} files")
 
         return "\n".join(summary)
 

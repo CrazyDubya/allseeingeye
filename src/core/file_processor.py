@@ -213,3 +213,27 @@ class FileProcessor:
         except Exception as e:
             logger.error(f"Error listing directory {directory}: {e}")
             return []
+
+    def scan_directory(self, directory: str) -> List[os.DirEntry]:
+        """
+        List directory contents efficiently using os.scandir.
+
+        Args:
+            directory: Directory path to list
+
+        Returns:
+            List of DirEntry objects
+        """
+        try:
+            # Check directory safety if security checks are enabled
+            if self.security_checks:
+                is_safe, reason = SecurityUtils.ensure_directory_is_safe(directory)
+                if not is_safe:
+                    logger.error(f"Security check failed for directory {directory}: {reason}")
+                    return []
+
+            with os.scandir(directory) as it:
+                return list(it)
+        except Exception as e:
+            logger.error(f"Error scanning directory {directory}: {e}")
+            return []
