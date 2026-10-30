@@ -321,3 +321,17 @@ def test_main(mock_ase, tmp_path):
 
     assert mock_ase.called
     assert mock_instance.run.called
+
+def test_language_statistics_summary(tmp_path):
+    ase = AllSeeingEye(directory=str(tmp_path))
+    ase.stats['files_by_category'] = {'code': 5, 'data': 2}
+    ase.stats['files_by_extension'] = {'.py': 3, '.json': 2, '.js': 2}
+    ase.stats['total_files'] = 7
+    ase.stats['total_lines'] = 100
+    ase.stats['total_size'] = 1024
+
+    summary = ase.create_codebase_summary()
+    assert "Programming languages:" in summary
+    assert "- Python: 3 files" in summary
+    assert "- JSON: 2 files" in summary
+    assert "- JavaScript: 2 files" in summary

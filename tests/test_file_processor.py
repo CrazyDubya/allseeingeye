@@ -47,3 +47,18 @@ def test_should_process_file():
 
     # Should not process binary files
     assert processor.should_process_file("binary.bin", metadata_binary) is False
+
+from unittest.mock import patch
+
+@patch("os.scandir")
+def test_scan_directory(mock_scandir):
+    # Just verify that scan_directory uses os.scandir and returns list
+    processor = FileProcessor(security_checks=False)
+
+    mock_scandir.return_value.__enter__.return_value = ["dir_entry1", "dir_entry2"]
+
+    entries = processor.scan_directory("test_dir")
+
+    assert mock_scandir.called
+    assert len(entries) == 2
+    assert entries == ["dir_entry1", "dir_entry2"]

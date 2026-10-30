@@ -40,7 +40,7 @@ class TreeBuilder:
         self.max_files = max_files
         
         # Initialize statistics
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             "total_files": 0,
             "total_dirs": 0,
             "total_size": 0,
@@ -75,26 +75,26 @@ class TreeBuilder:
             Returns:
                 True if processing should continue, False if file limit reached
             """
-            entries = self.file_processor.list_directory(dir_path)
+            entries = self.file_processor.scan_directory(dir_path)
             
             # Sort entries
-            entries = sorted(entries)
+            entries.sort(key=lambda e: e.name)
             
             # Separate directories and files
-            dirs = [e for e in entries if os.path.isdir(os.path.join(dir_path, e))]
-            files = [e for e in entries if os.path.isfile(os.path.join(dir_path, e))]
+            dirs = [e for e in entries if e.is_dir()]
+            files = [e for e in entries if e.is_file()]
             
             # Process all files first
             for i, entry in enumerate(files):
                 is_last = (i == len(files) - 1 and len(dirs) == 0)
                 conn = '└── ' if is_last else '├── '
                 
-                file_path = os.path.join(dir_path, entry)
+                file_path = entry.path
                 rel_path = os.path.relpath(file_path, self.base_directory)
                 
                 # Skip excluded files
                 if rel_path in self.excluded_files:
-                    tree_output.append(f"{prefix}{conn}{entry} # Excluded")
+                    tree_output.append(f"{prefix}{conn}{entry.name} # Excluded")
                     continue
                 
                 # Process file
@@ -104,8 +104,16 @@ class TreeBuilder:
                 category = self.file_processor.get_file_category(file_path)
                 self.stats["files_by_category"][category] = self.stats["files_by_category"].get(category, 0) + 1  # type: ignore
                 
+                # Track extensions for languages
+                _, ext = os.path.splitext(entry.name)
+                ext = ext.lower()
+                if ext:
+                    if "files_by_extension" not in self.stats:
+                        self.stats["files_by_extension"] = {}
+                    self.stats["files_by_extension"][ext] = self.stats["files_by_extension"].get(ext, 0) + 1
+
                 # Add to tree
-                tree_output.append(f"{prefix}{conn}{entry}")
+                tree_output.append(f"{prefix}{conn}{entry.name}")
                 
                 # Check if we've hit the file limit
                 if self.stats["total_files"] >= self.max_files:  # type: ignore
@@ -131,16 +139,16 @@ class TreeBuilder:
                 conn = '└── ' if is_last else '├── '
                 new_prefix = prefix + ('    ' if is_last else '│   ')
                 
-                dir_path_full = os.path.join(dir_path, entry)
+                dir_path_full = entry.path
                 rel_dir_path = os.path.relpath(dir_path_full, self.base_directory)
                 
                 # Skip excluded directories
-                if entry in self.excluded_dirs or rel_dir_path in self.excluded_dirs:
-                    tree_output.append(f"{prefix}{conn}{entry}/ # Excluded")
+                if entry.name in self.excluded_dirs or rel_dir_path in self.excluded_dirs:
+                    tree_output.append(f"{prefix}{conn}{entry.name}/ # Excluded")
                     continue
                 
                 # Add directory to tree
-                tree_output.append(f"{prefix}{conn}{entry}/")
+                tree_output.append(f"{prefix}{conn}{entry.name}/")
                 self.stats["total_dirs"] += 1  # type: ignore
                 
                 # Recursively process subdirectories
@@ -193,10 +201,7 @@ class TreeBuilder:
                     summary.append(f"- {directory}/: Error counting files")
         
         # Add language stats if available
-        languages = {}  # type: ignore
-        for category, count in self.stats['files_by_category'].items():  # type: ignore
-            # Skip attempting to iterate over count, which is an integer
-            continue
+        languages = self.stats.get('files_by_extension', {})
         
         if languages:
             summary.append("\nProgramming languages:")
@@ -217,7 +222,15 @@ class TreeBuilder:
                 ".php": "PHP",
                 ".swift": "Swift",
                 ".kt": "Kotlin",
-                ".rs": "Rust"
+                ".rs": "Rust",
+                ".sh": "Shell",
+                ".json": "JSON",
+                ".md": "Markdown",
+                ".yml": "YAML",
+                ".yaml": "YAML",
+                ".toml": "TOML",
+                ".xml": "XML",
+                ".sql": "SQL"
             }
             
             # Get top 5 languages
