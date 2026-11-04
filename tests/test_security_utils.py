@@ -76,6 +76,16 @@ def test_is_safe_file_content_malicious_patterns():
     assert is_safe is False
     assert "Found potentially unsafe pattern" in msg
 
+    # Malicious subprocess run pattern
+    is_safe, msg = SecurityUtils.is_safe_file_content("import subprocess; subprocess.run(['rm', '-rf', '/'])")
+    assert is_safe is False
+    assert "Found potentially unsafe pattern" in msg
+
+    # Malicious importlib import_module pattern
+    is_safe, msg = SecurityUtils.is_safe_file_content("import importlib; importlib.import_module('os').system('ls')")
+    assert is_safe is False
+    assert "Found potentially unsafe pattern" in msg
+
     # Multiline evasion pattern (shell commands)
     is_safe, msg = SecurityUtils.is_safe_file_content("`\nrm -rf /\n`")
     assert is_safe is False
