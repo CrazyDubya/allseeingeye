@@ -82,7 +82,8 @@ class Analyzer:
         self.file_processor = FileProcessor(
             max_file_size=self.max_file_size,
             active_categories=self.active_categories,
-            security_checks=self.security_checks
+            security_checks=self.security_checks,
+            base_dir=self.directory
         )
         
         self.tree_builder = TreeBuilder(

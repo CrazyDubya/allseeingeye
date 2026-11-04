@@ -25,7 +25,8 @@ class FileProcessor:
     def __init__(self, 
                 max_file_size: int = 1024 * 1024,  # 1MB default
                 active_categories: Optional[Set[str]] = None,
-                security_checks: bool = True):
+                security_checks: bool = True,
+                base_dir: Optional[str] = None):
         """
         Initialize the file processor.
         
@@ -33,10 +34,12 @@ class FileProcessor:
             max_file_size: Maximum file size to process in bytes
             active_categories: Set of categories to process
             security_checks: Whether to perform security checks
+            base_dir: Base directory for path validation to prevent traversal
         """
         self.max_file_size = max_file_size
         self.active_categories = active_categories or set(FileCategory.CATEGORIES.keys())
         self.security_checks = security_checks
+        self.base_dir = base_dir
         
         # Initialize file type detection
         mimetypes.init()
@@ -142,7 +145,7 @@ class FileProcessor:
         try:
             # Check path safety if security checks are enabled
             if self.security_checks:
-                is_valid, error = SecurityUtils.validate_path(file_path)
+                is_valid, error = SecurityUtils.validate_path(file_path, base_dir=self.base_dir)
                 if not is_valid:
                     logger.error(f"Security validation failed for {file_path}: {error}")
                     result['error'] = f"Security validation failed: {error}"
