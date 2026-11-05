@@ -271,7 +271,7 @@ class EfficientAnalyzer:
         try:
             # Check security if enabled
             if self.security_checks:
-                is_valid, error = SecurityUtils.validate_path(file_path)
+                is_valid, error = SecurityUtils.validate_path(file_path, self.directory)
                 if not is_valid:
                     logger.warning(f"Security validation failed for {file_path}: {error}")
                     return {"error": f"Security validation failed: {error}"}
