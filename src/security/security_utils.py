@@ -341,18 +341,19 @@ class SecurityUtils:
         return True, ""
     
     @staticmethod
-    def ensure_directory_is_safe(directory: str) -> Tuple[bool, str]:
+    def ensure_directory_is_safe(directory: str, base_dir: Optional[str] = None) -> Tuple[bool, str]:
         """
         Ensure a directory is safe to read from/write to.
         
         Args:
             directory: The directory path to check
+            base_dir: Optional base directory that the path must be contained within
             
         Returns:
             Tuple of (is_safe, reason)
         """
         # Validate path
-        is_valid, error = SecurityUtils.validate_path(directory)
+        is_valid, error = SecurityUtils.validate_path(directory, base_dir)
         if not is_valid:
             return False, error
         
