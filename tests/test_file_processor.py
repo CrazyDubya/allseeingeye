@@ -47,3 +47,25 @@ def test_should_process_file():
 
     # Should not process binary files
     assert processor.should_process_file("binary.bin", metadata_binary) is False
+
+def test_process_file_unsafe_content(tmp_path):
+    processor = FileProcessor(max_file_size=1024 * 1024) # 1 MB
+
+    # Create a temporary file with a malicious pattern
+    test_file = tmp_path / "unsafe_script.py"
+    unsafe_content = "import os\nos.system('echo malicious')\nprint('done')\n"
+    test_file.write_text(unsafe_content)
+
+    # Process the file
+    result = processor.process_file(str(test_file))
+
+    # The line count should still be calculated
+    assert result["line_count"] == 4
+
+    # Check if security warning is correctly populated
+    assert "security_warning" in result
+    assert "Found potentially unsafe pattern" in result["security_warning"]
+
+    # Check if content was properly redacted
+    assert result["content"] == "[CONTENT REDACTED DUE TO SECURITY WARNING]"
+    assert "os.system" not in result["content"]
