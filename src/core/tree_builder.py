@@ -75,26 +75,26 @@ class TreeBuilder:
             Returns:
                 True if processing should continue, False if file limit reached
             """
-            entries = self.file_processor.list_directory(dir_path)
+            entries = list(self.file_processor.scan_directory(dir_path))
             
-            # Sort entries
-            entries = sorted(entries)
+            # Sort entries by name
+            entries.sort(key=lambda e: e.name)
             
-            # Separate directories and files
-            dirs = [e for e in entries if os.path.isdir(os.path.join(dir_path, e))]
-            files = [e for e in entries if os.path.isfile(os.path.join(dir_path, e))]
+            # Separate directories and files using os.DirEntry attributes
+            dirs = [e for e in entries if e.is_dir()]
+            files = [e for e in entries if e.is_file()]
             
             # Process all files first
             for i, entry in enumerate(files):
                 is_last = (i == len(files) - 1 and len(dirs) == 0)
                 conn = '└── ' if is_last else '├── '
                 
-                file_path = os.path.join(dir_path, entry)
+                file_path = entry.path
                 rel_path = os.path.relpath(file_path, self.base_directory)
                 
                 # Skip excluded files
                 if rel_path in self.excluded_files:
-                    tree_output.append(f"{prefix}{conn}{entry} # Excluded")
+                    tree_output.append(f"{prefix}{conn}{entry.name} # Excluded")
                     continue
                 
                 # Process file
@@ -105,7 +105,7 @@ class TreeBuilder:
                 self.stats["files_by_category"][category] = self.stats["files_by_category"].get(category, 0) + 1  # type: ignore
                 
                 # Add to tree
-                tree_output.append(f"{prefix}{conn}{entry}")
+                tree_output.append(f"{prefix}{conn}{entry.name}")
                 
                 # Check if we've hit the file limit
                 if self.stats["total_files"] >= self.max_files:  # type: ignore
@@ -131,16 +131,16 @@ class TreeBuilder:
                 conn = '└── ' if is_last else '├── '
                 new_prefix = prefix + ('    ' if is_last else '│   ')
                 
-                dir_path_full = os.path.join(dir_path, entry)
+                dir_path_full = entry.path
                 rel_dir_path = os.path.relpath(dir_path_full, self.base_directory)
                 
                 # Skip excluded directories
-                if entry in self.excluded_dirs or rel_dir_path in self.excluded_dirs:
-                    tree_output.append(f"{prefix}{conn}{entry}/ # Excluded")
+                if entry.name in self.excluded_dirs or rel_dir_path in self.excluded_dirs:
+                    tree_output.append(f"{prefix}{conn}{entry.name}/ # Excluded")
                     continue
                 
                 # Add directory to tree
-                tree_output.append(f"{prefix}{conn}{entry}/")
+                tree_output.append(f"{prefix}{conn}{entry.name}/")
                 self.stats["total_dirs"] += 1  # type: ignore
                 
                 # Recursively process subdirectories
