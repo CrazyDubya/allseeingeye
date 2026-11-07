@@ -181,10 +181,22 @@ class FileProcessor:
                         result['content'] = content
                         result['line_count'] = content.count('\n') + 1  # type: ignore
                         
+                except PermissionError as e:
+                    logger.error(f"Permission denied reading file {file_path}: {e}")
+                    result['error'] = f"Permission denied: {e}"
+                except UnicodeDecodeError as e:
+                    logger.error(f"Encoding error reading file {file_path}: {e}")
+                    result['error'] = f"Encoding error: {e}"
                 except Exception as e:
                     logger.error(f"Error reading file {file_path}: {e}")
                     result['error'] = str(e)
             
+        except FileNotFoundError as e:
+            logger.error(f"File not found {file_path}: {e}")
+            result['error'] = f"File not found: {e}"
+        except PermissionError as e:
+            logger.error(f"Permission denied processing file {file_path}: {e}")
+            result['error'] = f"Permission denied: {e}"
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")
             result['error'] = str(e)
@@ -210,6 +222,40 @@ class FileProcessor:
                     return []
             
             return os.listdir(directory)
-        except Exception as e:
+        except PermissionError as e:
+            logger.error(f"Permission denied listing directory {directory}: {e}")
+            return []
+        except FileNotFoundError as e:
+            logger.error(f"Directory not found {directory}: {e}")
+            return []
+        except OSError as e:
             logger.error(f"Error listing directory {directory}: {e}")
             return []
+
+    def scan_directory(self, directory: str):
+        """
+        Scan a directory and yield os.DirEntry objects for efficient traversal.
+
+        Args:
+            directory: Directory path to scan
+
+        Yields:
+            os.DirEntry objects representing the directory contents
+        """
+        try:
+            # Check directory safety if security checks are enabled
+            if self.security_checks:
+                is_safe, reason = SecurityUtils.ensure_directory_is_safe(directory)
+                if not is_safe:
+                    logger.error(f"Security check failed for directory {directory}: {reason}")
+                    return
+
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    yield entry
+        except PermissionError as e:
+            logger.error(f"Permission denied scanning directory {directory}: {e}")
+        except FileNotFoundError as e:
+            logger.error(f"Directory not found {directory}: {e}")
+        except OSError as e:
+            logger.error(f"Error scanning directory {directory}: {e}")
