@@ -165,26 +165,34 @@ class FileProcessor:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                         content = file.read()
                         
+                        result['line_count'] = content.count('\n') + 1  # type: ignore
+
                         # Perform security checks on content if enabled
                         if self.security_checks:
                             is_safe, reason = SecurityUtils.is_safe_file_content(content)
                             if not is_safe:
                                 logger.warning(f"Security check flagged content in {file_path}: {reason}")
                                 result['security_warning'] = reason
-                            
-                            # Sanitize content if emojis are detected
-                            sanitized_content, emoji_count = SecurityUtils.sanitize_emojis(content)
-                            if emoji_count > 0:
-                                logger.info(f"Sanitized {emoji_count} emojis in {file_path}")
-                                content = sanitized_content
+                                content = "[REDACTED FOR SECURITY]"
+                            else:
+                                # Sanitize content if emojis are detected
+                                sanitized_content, emoji_count = SecurityUtils.sanitize_emojis(content)
+                                if emoji_count > 0:
+                                    logger.info(f"Sanitized {emoji_count} emojis in {file_path}")
+                                    content = sanitized_content
                         
                         result['content'] = content
-                        result['line_count'] = content.count('\n') + 1  # type: ignore
                         
+                except (UnicodeDecodeError, PermissionError, FileNotFoundError, OSError) as e:
+                    logger.error(f"Explicit error reading file {file_path}: {e}")
+                    result['error'] = str(e)
                 except Exception as e:
                     logger.error(f"Error reading file {file_path}: {e}")
                     result['error'] = str(e)
             
+        except (PermissionError, FileNotFoundError, OSError) as e:
+            logger.error(f"Explicit error processing file {file_path}: {e}")
+            result['error'] = str(e)
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")
             result['error'] = str(e)

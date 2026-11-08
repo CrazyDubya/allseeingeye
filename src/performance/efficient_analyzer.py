@@ -296,24 +296,28 @@ class EfficientAnalyzer:
                 # Read content with I/O limiting
                 content = self.io_limiter.read_file(file_path)
                 
+                # Count lines before any redaction
+                result['line_count'] = content.count('\n') + 1 if content else 0
+
                 # Perform security checks if enabled
                 if self.security_checks and content:
                     is_safe, reason = SecurityUtils.is_safe_file_content(content)
                     if not is_safe:
                         logger.warning(f"Security check flagged content in {file_path}: {reason}")
                         result['security_warning'] = reason
-                    
-                    # Sanitize content if emojis are detected
-                    sanitized_content, emoji_count = SecurityUtils.sanitize_emojis(content)
-                    if emoji_count > 0:
-                        logger.info(f"Sanitized {emoji_count} emojis in {file_path}")
-                        content = sanitized_content
+                        content = "[REDACTED FOR SECURITY]"
+                    else:
+                        # Sanitize content if emojis are detected
+                        sanitized_content, emoji_count = SecurityUtils.sanitize_emojis(content)
+                        if emoji_count > 0:
+                            logger.info(f"Sanitized {emoji_count} emojis in {file_path}")
+                            content = sanitized_content
                 
                 result['content'] = content
-                
-                # Count lines
-                result['line_count'] = content.count('\n') + 1
         
+        except (UnicodeDecodeError, PermissionError, FileNotFoundError, OSError) as e:
+            logger.error(f"Explicit error processing file {file_path}: {e}")
+            result['error'] = str(e)
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")
             result['error'] = str(e)
