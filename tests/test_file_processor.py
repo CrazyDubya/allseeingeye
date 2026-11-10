@@ -47,3 +47,20 @@ def test_should_process_file():
 
     # Should not process binary files
     assert processor.should_process_file("binary.bin", metadata_binary) is False
+
+def test_security_redaction(tmp_path):
+    processor = FileProcessor(security_checks=True)
+
+    # Create a malicious file
+    malicious_file = tmp_path / "malicious.py"
+    malicious_content = "def test():\n    eval('2+2')\n    return True\n"
+    malicious_file.write_text(malicious_content)
+
+    result = processor.process_file(str(malicious_file))
+
+    # Verify content was redacted
+    assert result.get('content') == "[REDACTED DUE TO SECURITY WARNING]"
+    assert 'security_warning' in result
+
+    # Verify line count was preserved (4 lines in original string)
+    assert result.get('line_count') == 4
